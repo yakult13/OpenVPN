@@ -1,0 +1,234 @@
+#!/bin/bash
+# VPS Installer
+# Script by Juan
+
+if [[ $EUID -ne 0 ]];then
+ ScriptMessage
+ echo -e "[\e[1;31mError\e[0m] This script must be run as root, exiting..."
+ exit 1
+fi
+
+MyVPS_Time='Asia/Manila'
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt install openvpn ca-certificates openssl
+
+echo 'port 110
+proto tcp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key  # This file should be kept secret
+dh none
+server 10.9.0.0 255.255.255.0
+ifconfig-pool-persist /var/log/openvpn/ipp.txt
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 208.67.222.222"
+push "dhcp-option DNS 208.67.220.220"
+duplicate-cn
+keepalive 10 120
+;tls-auth ta.key 0 # This file is secret
+tls-crypt ta.key
+;cipher AES-256-CBC
+cipher AES-256-GCM
+auth SHA256
+compress lz4-v2
+push "compress lz4-v2"
+;comp-lzo
+max-clients 4000
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /var/log/openvpn/openvpn-status.log
+log         /var/log/openvpn/openvpn.log
+;log-append  /var/log/openvpn/openvpn.log
+verb 3
+mute 20
+explicit-exit-notify 1' > /etc/openvpn/server/server.conf
+
+echo 'port 110
+proto udp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key  # This file should be kept secret
+dh none
+server 10.9.0.0 255.255.255.0
+ifconfig-pool-persist /var/log/openvpn/ipp.txt
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 208.67.222.222"
+push "dhcp-option DNS 208.67.220.220"
+duplicate-cn
+keepalive 10 120
+;tls-auth ta.key 0 # This file is secret
+tls-crypt ta.key
+;cipher AES-256-CBC
+cipher AES-256-GCM
+auth SHA256
+compress lz4-v2
+push "compress lz4-v2"
+;comp-lzo
+max-clients 4000
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /var/log/openvpn/openvpn-status.log
+log         /var/log/openvpn/openvpn.log
+;log-append  /var/log/openvpn/openvpn.log
+verb 3
+mute 20
+explicit-exit-notify 1' > /etc/openvpn/server/servertcp.conf
+
+echo '-----BEGIN CERTIFICATE-----
+MIIDsDCCAzagAwIBAgIUcWc0I8JnitI1aPJW+4uu9gEZ9oUwCgYIKoZIzj0EAwQw
+gaQxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRYwFAYDVQQHDA1T
+YW4gRnJhbmNpc2NvMRUwEwYDVQQKDAxGcmVlbmV0IENhZmUxFjAUBgNVBAsMDUZy
+ZWVuZXQgVXNlcnMxFDASBgNVBAMMC0Vhc3ktUlNBIENBMSMwIQYJKoZIhvcNAQkB
+FhRzdXBwb3J0QGZyZWVuZXQuY2FmZTAeFw0yMjAzMDEwODI0MzZaFw0zMjAyMjcw
+ODI0MzZaMIGkMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQG
+A1UEBwwNU2FuIEZyYW5jaXNjbzEVMBMGA1UECgwMRnJlZW5ldCBDYWZlMRYwFAYD
+VQQLDA1GcmVlbmV0IFVzZXJzMRQwEgYDVQQDDAtFYXN5LVJTQSBDQTEjMCEGCSqG
+SIb3DQEJARYUc3VwcG9ydEBmcmVlbmV0LmNhZmUwdjAQBgcqhkjOPQIBBgUrgQQA
+IgNiAAThAR5Jb4xp/w85DSLyxlURcAJURvSwp6xBxzFrhRpTggAlRAUnlhwrhVDi
+qAccrPr0RTmh8fnSOelEH/8GB1N3UZVoesLNq9Sj4Pzg00Ig21mW2ZNe9zyRrYsO
+SIKaanijggElMIIBITAdBgNVHQ4EFgQUUCV2I3tNB+NLIsBbm7/5FYwB86YwgeQG
+A1UdIwSB3DCB2YAUUCV2I3tNB+NLIsBbm7/5FYwB86ahgaqkgacwgaQxCzAJBgNV
+BAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRYwFAYDVQQHDA1TYW4gRnJhbmNp
+c2NvMRUwEwYDVQQKDAxGcmVlbmV0IENhZmUxFjAUBgNVBAsMDUZyZWVuZXQgVXNl
+cnMxFDASBgNVBAMMC0Vhc3ktUlNBIENBMSMwIQYJKoZIhvcNAQkBFhRzdXBwb3J0
+QGZyZWVuZXQuY2FmZYIUcWc0I8JnitI1aPJW+4uu9gEZ9oUwDAYDVR0TBAUwAwEB
+/zALBgNVHQ8EBAMCAQYwCgYIKoZIzj0EAwQDaAAwZQIxALDQYyITK89koFUClMwy
+9c6tRXemjJK22YFJVQJ4oE3Pto6I1w+NA6r3yjujKHHTQwIwPfcUG3w1uWDX5Xft
+wpeS3s1t2U4gIyIlJayhGWcSW+JRm+Rk9iHhn3Rqo1lcXbpL
+-----END CERTIFICATE-----' > /etc/openvpn/server/ca.crt
+
+echo 'Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            ec:59:3c:df:f5:b7:32:6d:16:42:e9:95:4a:f9:53:4a
+        Signature Algorithm: ecdsa-with-SHA512
+        Issuer: C=US, ST=California, L=San Francisco, O=Freenet Cafe, OU=Freenet Users, CN=Easy-RSA CA/emailAddress=support@freenet.cafe
+        Validity
+            Not Before: Mar  1 08:28:06 2022 GMT
+            Not After : Feb 13 08:28:06 2025 GMT
+        Subject: C=US, ST=California, L=San Francisco, O=Freenet Cafe, OU=Freenet Users, CN=server/emailAddress=support@freenet.cafe
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:42:f6:af:78:0f:4b:a2:81:32:48:18:77:19:84:
+                    d4:87:48:7f:a9:92:80:db:53:70:9e:e0:e5:6c:ff:
+                    b6:91:76:48:0c:62:e0:2d:89:ef:60:74:f1:56:35:
+                    e9:13:34:52:92:65:45:14:69:27:f9:38:2e:a1:94:
+                    37:1e:ae:3e:35:b3:4b:ff:ef:fe:40:b1:97:f9:4a:
+                    19:ad:78:3c:da:72:62:60:05:71:d6:8f:12:f9:eb:
+                    2e:61:77:cb:00:86:de
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                8F:4A:76:14:F3:58:56:32:AD:1E:54:35:EE:A1:F5:9E:F1:BA:0D:0A
+            X509v3 Authority Key Identifier: 
+                keyid:50:25:76:23:7B:4D:07:E3:4B:22:C0:5B:9B:BF:F9:15:8C:01:F3:A6
+                DirName:/C=US/ST=California/L=San Francisco/O=Freenet Cafe/OU=Freenet Users/CN=Easy-RSA CA/emailAddress=support@freenet.cafe
+                serial:71:67:34:23:C2:67:8A:D2:35:68:F2:56:FB:8B:AE:F6:01:19:F6:85
+
+            X509v3 Extended Key Usage: 
+                TLS Web Server Authentication
+            X509v3 Key Usage: 
+                Digital Signature, Key Encipherment
+            X509v3 Subject Alternative Name: 
+                DNS:server
+    Signature Algorithm: ecdsa-with-SHA512
+         30:65:02:31:00:da:ec:4d:06:a3:b3:41:1f:73:8d:fe:db:df:
+         9e:23:79:19:3a:5b:6d:2d:1a:06:4c:ec:08:bd:fd:87:a0:47:
+         bd:2d:c5:53:8e:34:6f:2b:3d:40:6e:57:69:44:80:11:b9:02:
+         30:04:78:ec:a8:ba:69:50:21:15:94:71:c0:c2:1e:fb:34:35:
+         48:f2:9b:2b:7d:18:83:91:57:6c:bd:ce:8b:4a:d9:e1:1a:07:
+         d0:6b:83:88:3d:53:ec:7b:cb:b7:31:be:a9
+-----BEGIN CERTIFICATE-----
+MIIDzTCCA1OgAwIBAgIRAOxZPN/1tzJtFkLplUr5U0owCgYIKoZIzj0EAwQwgaQx
+CzAJBgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRYwFAYDVQQHDA1TYW4g
+RnJhbmNpc2NvMRUwEwYDVQQKDAxGcmVlbmV0IENhZmUxFjAUBgNVBAsMDUZyZWVu
+ZXQgVXNlcnMxFDASBgNVBAMMC0Vhc3ktUlNBIENBMSMwIQYJKoZIhvcNAQkBFhRz
+dXBwb3J0QGZyZWVuZXQuY2FmZTAeFw0yMjAzMDEwODI4MDZaFw0yNTAyMTMwODI4
+MDZaMIGfMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UE
+BwwNU2FuIEZyYW5jaXNjbzEVMBMGA1UECgwMRnJlZW5ldCBDYWZlMRYwFAYDVQQL
+DA1GcmVlbmV0IFVzZXJzMQ8wDQYDVQQDDAZzZXJ2ZXIxIzAhBgkqhkiG9w0BCQEW
+FHN1cHBvcnRAZnJlZW5ldC5jYWZlMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEQvav
+eA9LooEySBh3GYTUh0h/qZKA21NwnuDlbP+2kXZIDGLgLYnvYHTxVjXpEzRSkmVF
+FGkn+TguoZQ3Hq4+NbNL/+/+QLGX+UoZrXg82nJiYAVx1o8S+esuYXfLAIbeo4IB
+SjCCAUYwCQYDVR0TBAIwADAdBgNVHQ4EFgQUj0p2FPNYVjKtHlQ17qH1nvG6DQow
+geQGA1UdIwSB3DCB2YAUUCV2I3tNB+NLIsBbm7/5FYwB86ahgaqkgacwgaQxCzAJ
+BgNVBAYTAlVTMRMwEQYDVQQIDApDYWxpZm9ybmlhMRYwFAYDVQQHDA1TYW4gRnJh
+bmNpc2NvMRUwEwYDVQQKDAxGcmVlbmV0IENhZmUxFjAUBgNVBAsMDUZyZWVuZXQg
+VXNlcnMxFDASBgNVBAMMC0Vhc3ktUlNBIENBMSMwIQYJKoZIhvcNAQkBFhRzdXBw
+b3J0QGZyZWVuZXQuY2FmZYIUcWc0I8JnitI1aPJW+4uu9gEZ9oUwEwYDVR0lBAww
+CgYIKwYBBQUHAwEwCwYDVR0PBAQDAgWgMBEGA1UdEQQKMAiCBnNlcnZlcjAKBggq
+hkjOPQQDBANoADBlAjEA2uxNBqOzQR9zjf7b354jeRk6W20tGgZM7Ai9/YegR70t
+xVOONG8rPUBuV2lEgBG5AjAEeOyoumlQIRWUccDCHvs0NUjymyt9GIORV2y9zotK
+2eEaB9Brg4g9U+x7y7cxvqk=
+-----END CERTIFICATE-----' > /etc/openvpn/server/server.crt
+
+echo '-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAwgSB5So79jpnCFg1a
+iO3oV2FD0I3sBIiBrEblfjGS2BbK54Hzc/gP40NJ6690I6ehZANiAARC9q94D0ui
+gTJIGHcZhNSHSH+pkoDbU3Ce4OVs/7aRdkgMYuAtie9gdPFWNekTNFKSZUUUaSf5
+OC6hlDcerj41s0v/7/5AsZf5ShmteDzacmJgBXHWjxL56y5hd8sAht4=
+-----END PRIVATE KEY-----' > /etc/openvpn/server/server.key
+
+echo '#
+# 2048 bit OpenVPN static key
+#
+-----BEGIN OpenVPN Static key V1-----
+2be30d2ecfb097dc2613dd34e1321c01
+baddd217e42954d991e00d528ca35574
+ff9cdbcd83e1ec5707f7ea4d08c1329d
+98938080f2e38b3511914c9f54af4f92
+902793e83bc9eb6ef18e559408a01c26
+0b4bd166a6e0523be4a4db485fdb21f9
+0f6a7a044611bcf7ffecfd22db603509
+9d6a3a2799ac08693f2a8d7ede8a8562
+cd793e9480e8121376f4b05015e78078
+0082469e27b6c69c507f8de1461f7528
+612a235dd42a3894bc5b963237814fbe
+e57ed2969b7a09943572e86068fd4ec3
+33511566d735aed7d83117c62b038262
+d34de0f2cba70b723a2906231b7f47d2
+f5ff9d91390bfb62cc46c9e3ec7f473a
+b53248f62ad7ab8e5741478934c43e0c
+-----END OpenVPN Static key V1-----' > /etc/openvpn/server/ta.key
+
+echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+
+sudo sysctl -p
+
+ip route list default
+
+echo '# START OPENVPN RULES
+# NAT table rules
+*nat
+:POSTROUTING ACCEPT [0:0]
+# Allow traffic from OpenVPN client to eth0 (change to the interface you discovered!)
+-A POSTROUTING -s 10.8.0.0/8 -o eth0 -j MASQUERADE
+COMMIT
+# END OPENVPN RULES' >> /etc/ufw/before.rules
+
+sed -i 's|DEFAULT_FORWARD_POLICY="DROP"|DEFAULT_FORWARD_POLICY="ACCEPT"|g' /etc/default/ufw
+
+sudo ufw allow 1194/udp
+sudo ufw allow 110/tcp
+sudo ufw allow OpenSSH
+sudo ufw disable
+sudo ufw enable
+
+sudo systemctl -f enable openvpn-server@server.service
+
+sudo systemctl start openvpn-server@server.service
+
+sudo systemctl status openvpn-server@server.service
