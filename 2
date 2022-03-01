@@ -11,7 +11,7 @@ fi
 MyVPS_Time='Asia/Manila'
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt install openvpn ca-certificates openssl
+apt install openvpn curl zip unzip tar gzip p7zip-full bc rc openssl cron net-tools dnsutils dos2unix screen bzip2 ccrypt ca-certificates uby apt-transport-https lsb-release  -y
 
 echo 'port 110
 proto tcp
@@ -210,13 +210,13 @@ sudo sysctl -p
 
 ip route list default
 
-echo '# START OPENVPN RULES
+#echo '# START OPENVPN RULES
 # NAT table rules
-*nat
-:POSTROUTING ACCEPT [0:0]
+#*nat
+#:POSTROUTING ACCEPT [0:0]
 # Allow traffic from OpenVPN client to eth0 (change to the interface you discovered!)
--A POSTROUTING -s 10.8.0.0/8 -o eth0 -j MASQUERADE
-COMMIT
+#-A POSTROUTING -s 10.8.0.0/8 -o eth0 -j MASQUERADE
+#COMMIT
 # END OPENVPN RULES' >> /etc/ufw/before.rules
 
 sed -i 's|DEFAULT_FORWARD_POLICY="DROP"|DEFAULT_FORWARD_POLICY="ACCEPT"|g' /etc/default/ufw
@@ -229,6 +229,6 @@ sudo ufw enable
 
 sudo systemctl -f enable openvpn-server@server.service
 
-sudo systemctl start openvpn-server@server.service
+sudo systemctl restart openvpn-server@server.service
 
 sudo systemctl status openvpn-server@server.service
