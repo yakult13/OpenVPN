@@ -36,7 +36,6 @@ OvpnDownload_Port='1998'
 MyVPS_Time='Asia/Manila'
 
 function  Instupdate() {
-export DEBIAN_FRONTEND=noninteractive
  apt-get update
  apt-get upgrade -y
  apt install fail2ban -y
@@ -200,7 +199,7 @@ cert server.crt
 key server.key
 dh none
 server 172.18.0.0 255.255.0.0
-ifconfig-pool-persist /var/log/openvpn/ipp.txt
+ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
@@ -210,8 +209,8 @@ user nobody
 group nogroup
 persist-key
 persist-tun
-status /var/log/openvpn/openvpn-status.log
-log /var/log/openvpn/openvpn.log
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
@@ -235,7 +234,7 @@ cert server.crt
 key server.key
 dh none
 server 172.19.0.0 255.255.0.0
-ifconfig-pool-persist /var/log/openvpn/ipp.txt
+ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
@@ -245,8 +244,8 @@ user nobody
 group nogroup
 persist-key
 persist-tun
-status /var/log/openvpn/openvpn-status.log
-log /var/log/openvpn/openvpn.log
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
@@ -270,7 +269,7 @@ cert server.crt
 key server.key
 dh none
 server 172.20.0.0 255.255.0.0
-ifconfig-pool-persist /var/log/openvpn/ipp.txt
+ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
@@ -280,8 +279,8 @@ user nobody
 group nogroup
 persist-key
 persist-tun
-status /var/log/openvpn/openvpn-status.log
-log /var/log/openvpn/openvpn.log
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
@@ -305,7 +304,7 @@ cert server.crt
 key server.key
 dh none
 server 172.21.0.0 255.255.0.0
-ifconfig-pool-persist /var/log/openvpn/ipp.txt
+ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
@@ -315,8 +314,8 @@ user nobody
 group nogroup
 persist-key
 persist-tun
-status /var/log/openvpn/openvpn-status.log
-log /var/log/openvpn/openvpn.log
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
