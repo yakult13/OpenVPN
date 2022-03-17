@@ -639,7 +639,7 @@ myNginxC
  mkdir -p /var/www/openvpn
 
  # Now creating all of our OpenVPN Configs 
-cat <<EOF152 > /var/www/openvpn/GStories.conf
+cat <<EOF152 > /var/www/openvpn/GStories.ovpn
 client
 dev tun
 proto tcp
