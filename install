@@ -463,7 +463,7 @@ f265e3ca3ca02a2f15b5e7ec78b7e7a9
 -----END OpenVPN Static key V1-----
 TAK
 
-cat <<'confkey' > /etc/openvpn/conf.key
+cat <<'confkey' > /etc/openvpn/conf.crt
 -----BEGIN CERTIFICATE-----
 MIIDrzCCAzSgAwIBAgIQOcEDwA0RbAYg1w1nvKxyLTAKBggqhkjOPQQDBDCBmjEL
 MAkGA1UEBhMCUEgxDjAMBgNVBAgMBVJpemFsMREwDwYDVQQHDAhBbnRpcG9sbzEV
