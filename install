@@ -187,16 +187,15 @@ function InsOpenVPN(){
 
  # Removing all existing openvpn server files
  rm -rf /etc/openvpn/*
-mkdir /etc/openvpn/certificates
-mkdir /etc/openvpn/server
+
  # Creating server.conf, ca.crt, server.crt and server.key
- cat <<'VPN1' > /etc/openvpn/server/server_tcp.conf
+ cat <<'VPN1' > /etc/openvpn/server_tcp.conf
 port MyOvpnPort1
 proto tcp
 dev tun
-ca /etc/openvpn/certificates/ca.crt
-cert /etc/openvpn/certificates/server.crt
-key /etc/openvpn/certificates/server.key
+ca ca.crt
+cert server.crt
+key server.key
 dh none
 server 172.18.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -225,13 +224,13 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN1
 
-cat <<'VPN2' > /etc/openvpn/server/server_tcp1.conf
+cat <<'VPN2' > /etc/openvpn/server_tcp1.conf
 port MyOvpnPort2
 proto tcp
 dev tun
-ca /etc/openvpn/certificates/ca.crt
-cert /etc/openvpn/certificates/server.crt
-key /etc/openvpn/certificates/server.key
+ca ca.crt
+cert server.crt
+key server.key
 dh none
 server 172.19.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -260,13 +259,13 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN2
 
- cat <<'VPN3' > /etc/openvpn/server/server_udp.conf
+ cat <<'VPN3' > /etc/openvpn/server_udp.conf
 port MyOvpnPort3
 proto udp
 dev tun
-ca /etc/openvpn/certificates/ca.crt
-cert /etc/openvpn/certificates/server.crt
-key /etc/openvpn/certificates/server.key
+ca ca.crt
+cert server.crt
+key server.key
 dh none
 server 172.20.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -295,13 +294,13 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN3
 
- cat <<'VPN4' > /etc/openvpn/server/server_udp1.conf
+ cat <<'VPN4' > /etc/openvpn/server_udp1.conf
 port MyOvpnPort4
 proto udp
 dev tun
-ca /etc/openvpn/certificates/ca.crt
-cert /etc/openvpn/certificates/server.crt
-key /etc/openvpn/certificates/server.key
+ca ca.crt
+cert server.crt
+key server.key
 dh none
 server 172.21.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -330,7 +329,7 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN4
 
- cat <<'CERT'> /etc/openvpn/certificates/ca.crt
+ cat <<'CERT'> /etc/openvpn/ca.crt
 -----BEGIN CERTIFICATE-----
 MIIB/TCCAYKgAwIBAgIUNH30fnRLkt03pCWLm/rxoHDzXLswCgYIKoZIzj0EAwIw
 FjEUMBIGA1UEAwwLRWFzeS1SU0EgQ0EwHhcNMjIwMzE4MTkzNDE1WhcNMzIwMzE1
@@ -346,7 +345,7 @@ sCcYgoUcwGfW6V8z3nR9jnOavFyGi1owc1Zj+wZjf+r1
 -----END CERTIFICATE-----
 CERT
 
- cat <<'SCERT'> /etc/openvpn/certificates/server.crt
+ cat <<'SCERT'> /etc/openvpn/server.crt
 Certificate:
     Data:
         Version: 3 (0x2)
@@ -410,7 +409,7 @@ ZNewaM0qXh74cSZbtSs=
 -----END CERTIFICATE-----
 SCERT
 
- cat <<'SKEY' > /etc/openvpn/certificates/server.key
+ cat <<'SKEY' > /etc/openvpn/server.key
 -----BEGIN PRIVATE KEY-----
 MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDB9GFQq8I1R0E5HqmyN
 K5dn/EvbG8DeHddWLB8CYCsALo+UaYbxebUvVumkxwGmSaqhZANiAAS/XdoFu79P
@@ -419,7 +418,7 @@ A6b1F9fn+nCThggEgNI4cQSTtYQNQ/sdpr3Cc3hrhIjeq5RPdgRbHnI=
 -----END PRIVATE KEY-----
 SKEY
 
-cat <<'TAK' > /etc/openvpn/certificates/ta.key
+cat <<'TAK' > /etc/openvpn/ta.key
 #
 # 2048 bit OpenVPN static key
 #
@@ -443,7 +442,7 @@ cb47b2bfc9644512e85f60e9b20e289e
 -----END OpenVPN Static key V1-----
 TAK
 
-cat <<'clientkey' > /etc/openvpn/certificates/ckey.key
+cat <<'clientkey' > /etc/openvpn/ckey.key
 -----BEGIN PRIVATE KEY-----
 MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAJr0n/pKoD7rubXqFI
 PUe4tKmOCFXmq4YRFKpcGddtcczvlfBmtNHCcCo3OjTgWOahZANiAATVlCL4CFD6
@@ -452,7 +451,7 @@ cWpEI2d5L9sahAmyX3UBoCbBa2vNtIGcHPyD9rPFHKRJ7ZSDf6DhCqs=
 -----END PRIVATE KEY-----
 clientkey
 
-cat <<'clientcert' > /etc/openvpn/certificates/ccert.crt
+cat <<'clientcert' > /etc/openvpn/ccert.crt
 Certificate:
     Data:
         Version: 3 (0x2)
@@ -520,9 +519,9 @@ clientcert
  sed -i "s|MyOvpnPort4|$OpenVPN_Port4|g" /etc/openvpn/server_udp1.conf
  
  # Getting some OpenVPN plugins for unix authentication
- wget -qO /etc/openvpn/b.zip 'https://github.com/imaPSYCHO/Parts/raw/main/openvpn_plugin64'
- unzip -qq /etc/openvpn/b.zip -d /etc/openvpn
- rm -f /etc/openvpn/b.zip
+ #wget -qO /etc/openvpn/b.zip 'https://github.com/imaPSYCHO/Parts/raw/main/openvpn_plugin64'
+ #unzip -qq /etc/openvpn/b.zip -d /etc/openvpn
+ #rm -f /etc/openvpn/b.zip
  
  # Some workaround for OpenVZ machines for "Startup error" openvpn service
  if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
@@ -698,16 +697,16 @@ http-proxy-option CUSTOM-HEADER X-Forwarded-For vt.tiktok.com
 http-proxy-option CUSTOM-HEADER Referrer vt.tiktok.com
 
 <ca>
-$(cat /etc/openvpn/certificates/ca.crt)
+$(cat /etc/openvpn/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/certificates/ccert.crt)
+$(cat /etc/openvpn/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/certificates/ckey.key)
+$(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/certificates/ta.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF152
 
@@ -739,16 +738,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: mobile.garena.my"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/certificates/ca.crt)
+$(cat /etc/openvpn/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/certificates/ccert.crt)
+$(cat /etc/openvpn/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/certificates/ckey.key)
+$(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/certificates/ta.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF16
 
@@ -780,16 +779,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: c3cdn.ml.youngjoygame.com"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/certificates/ca.crt)
+$(cat /etc/openvpn/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/certificates/ccert.crt)
+$(cat /etc/openvpn/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/certificates/ckey.key)
+$(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/certificates/ta.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF18
 
@@ -821,16 +820,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: staging.iwant.ph"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/certificates/ca.crt)
+$(cat /etc/openvpn/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/certificates/ccert.crt)
+$(cat /etc/openvpn/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/certificates/ckey.key)
+$(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/certificates/ta.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF601
 
@@ -862,16 +861,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: redirect.googlevideo.com"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/certificates/ca.crt)
+$(cat /etc/openvpn/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/certificates/ccert.crt)
+$(cat /etc/openvpn/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/certificates/ckey.key)
+$(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/certificates/ta.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF600
 
@@ -896,16 +895,16 @@ key-direction 1
 compress lz4
 
 <ca>
-$(cat /etc/openvpn/certificates/ca.crt)
+$(cat /etc/openvpn/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/certificates/ccert.crt)
+$(cat /etc/openvpn/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/certificates/ckey.key)
+$(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/certificates/ta.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF160
 
@@ -931,16 +930,16 @@ key-direction 1
 compress lz4
 
 <ca>
-$(cat /etc/openvpn/certificates/ca.crt)
+$(cat /etc/openvpn/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/certificates/ccert.crt)
+$(cat /etc/openvpn/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/certificates/ckey.key)
+$(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/certificates/ta.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF17
 
