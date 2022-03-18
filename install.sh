@@ -35,6 +35,7 @@ OvpnDownload_Port='1998'
 MyVPS_Time='Asia/Manila'
 
 function  Instupdate() {
+export DEBIAN_FRONTEND=noninteractive
  apt-get update
  apt-get upgrade -y
  apt install fail2ban -y
