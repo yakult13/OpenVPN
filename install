@@ -15,7 +15,6 @@ if [[ $EUID -ne 0 ]];then
  echo -e "[\e[1;31mError\e[0m] This script must be run as root, exiting..."
  exit 1
 fi
-
 MyScriptName='FreenetCafe'
 SSH_Port1='22'
 SSH_Port2='225'
@@ -36,7 +35,6 @@ OvpnDownload_Port='1998'
 MyVPS_Time='Asia/Manila'
 
 function  Instupdate() {
- export DEBIAN_FRONTEND=noninteractive
  apt-get update
  apt-get upgrade -y
  apt install fail2ban -y
@@ -45,11 +43,9 @@ function  Instupdate() {
  apt-get install dropbear stunnel4 privoxy ca-certificates nginx ruby apt-transport-https lsb-release squid screenfetch -y
  apt-get install perl libnet-ssleay-perl openssl libauthen-pam-perl libpam-runtime libio-pty-perl apt-show-versions python dbus libxml-parser-perl -y
  apt-get install shared-mime-info jq -y
- gem install lolcat -y
+ gem install lolcat
  apt-get autoremove -y
- echo "deb http://build.openvpn.net/debian/openvpn/stable $(lsb_release -sc) main" >/etc/apt/sources.list.d/openvpn.list
- apt-key del E158C569
- wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+ echo "deb http://build.openvpn.net/debian/openvpn/stable $(lsb_release -sc) main" >/etc/apt/sources.list.d/openvpn.list && apt-key del E158C569 && wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
  wget -qO security-openvpn-net.asc "https://keys.openpgp.org/vks/v1/by-fingerprint/F554A3687412CFFEBDEFE0A312F5F7B42F2B01E7" && gpg --import security-openvpn-net.asc
  apt-get update -y
  apt-get install openvpn -y
@@ -191,15 +187,16 @@ function InsOpenVPN(){
 
  # Removing all existing openvpn server files
  rm -rf /etc/openvpn/*
-
+mkdir /etc/openvpn/certificates
+mkdir /etc/openvpn/server
  # Creating server.conf, ca.crt, server.crt and server.key
- cat <<'VPN1' > /etc/openvpn/server_tcp.conf
+ cat <<'VPN1' > /etc/openvpn/server/server_tcp.conf
 port MyOvpnPort1
 proto tcp
 dev tun
-ca ca.crt
-cert server.crt
-key server.key
+ca /etc/openvpn/certificates/ca.crt
+cert /etc/openvpn/certificates/server.crt
+key /etc/openvpn/certificates/server.key
 dh none
 server 172.18.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -218,7 +215,7 @@ verb 3
 mute 20
 explicit-exit-notify 0
 cipher AES-256-GCM
-auth SHA512
+auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -228,13 +225,13 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN1
 
-cat <<'VPN2' > /etc/openvpn/server_tcp1.conf
+cat <<'VPN2' > /etc/openvpn/server/server_tcp1.conf
 port MyOvpnPort2
 proto tcp
 dev tun
-ca ca.crt
-cert server.crt
-key server.key
+ca /etc/openvpn/certificates/ca.crt
+cert /etc/openvpn/certificates/server.crt
+key /etc/openvpn/certificates/server.key
 dh none
 server 172.19.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -253,7 +250,7 @@ verb 3
 mute 20
 explicit-exit-notify 0
 cipher AES-256-GCM
-auth SHA512
+auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -263,13 +260,13 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN2
 
- cat <<'VPN3' > /etc/openvpn/server_udp.conf
+ cat <<'VPN3' > /etc/openvpn/server/server_udp.conf
 port MyOvpnPort3
 proto udp
 dev tun
-ca ca.crt
-cert server.crt
-key server.key
+ca /etc/openvpn/certificates/ca.crt
+cert /etc/openvpn/certificates/server.crt
+key /etc/openvpn/certificates/server.key
 dh none
 server 172.20.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -288,7 +285,7 @@ verb 3
 mute 20
 explicit-exit-notify 0
 cipher AES-256-GCM
-auth SHA512
+auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -298,13 +295,13 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN3
 
- cat <<'VPN4' > /etc/openvpn/server_udp1.conf
+ cat <<'VPN4' > /etc/openvpn/server/server_udp1.conf
 port MyOvpnPort4
 proto udp
 dev tun
-ca ca.crt
-cert server.crt
-key server.key
+ca /etc/openvpn/certificates/ca.crt
+cert /etc/openvpn/certificates/server.crt
+key /etc/openvpn/certificates/server.key
 dh none
 server 172.21.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
@@ -323,7 +320,7 @@ verb 3
 mute 20
 explicit-exit-notify 0
 cipher AES-256-GCM
-auth SHA512
+auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -333,65 +330,56 @@ push "dhcp-option DNS 8.8.4.4"
 push "dhcp-option DNS 8.8.8.8"
 VPN4
 
- cat <<'CERT'> /etc/openvpn/ca.crt
+ cat <<'CERT'> /etc/openvpn/certificates/ca.crt
 -----BEGIN CERTIFICATE-----
-MIIDkjCCAxigAwIBAgIUZtgLLL24BoJLKURY2B0NgozmFvgwCgYIKoZIzj0EAwQw
-gZoxCzAJBgNVBAYTAlBIMQ4wDAYDVQQIDAVSaXphbDERMA8GA1UEBwwIQW50aXBv
-bG8xFTATBgNVBAoMDEZyZWVuZXQgQ2FmZTEWMBQGA1UECwwNRnJlZW5ldCBVc2Vy
-czEUMBIGA1UEAwwLRWFzeS1SU0EgQ0ExIzAhBgkqhkiG9w0BCQEWFHN1cHBvcnRA
-ZnJlZW5ldC5jYWZlMB4XDTIyMDMwNzA2MTEyNVoXDTMyMDMwNDA2MTEyNVowgZox
-CzAJBgNVBAYTAlBIMQ4wDAYDVQQIDAVSaXphbDERMA8GA1UEBwwIQW50aXBvbG8x
-FTATBgNVBAoMDEZyZWVuZXQgQ2FmZTEWMBQGA1UECwwNRnJlZW5ldCBVc2VyczEU
-MBIGA1UEAwwLRWFzeS1SU0EgQ0ExIzAhBgkqhkiG9w0BCQEWFHN1cHBvcnRAZnJl
-ZW5ldC5jYWZlMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEAdj1FSSdpJFp3bLlWf7I
-FjzetFSg6KTTnr4wQK69gD3FZ6jhrH2Df20IHaJcWGcPq7EFcx5R507Q7BtRDhev
-OlpQzYYJqdt+raMh7diWmYqlShCJ/Bs82t6Flg0poov2o4IBGzCCARcwHQYDVR0O
-BBYEFMYkzvhENnWL7Jpt+14MCh7obx/iMIHaBgNVHSMEgdIwgc+AFMYkzvhENnWL
-7Jpt+14MCh7obx/ioYGgpIGdMIGaMQswCQYDVQQGEwJQSDEOMAwGA1UECAwFUml6
-YWwxETAPBgNVBAcMCEFudGlwb2xvMRUwEwYDVQQKDAxGcmVlbmV0IENhZmUxFjAU
-BgNVBAsMDUZyZWVuZXQgVXNlcnMxFDASBgNVBAMMC0Vhc3ktUlNBIENBMSMwIQYJ
-KoZIhvcNAQkBFhRzdXBwb3J0QGZyZWVuZXQuY2FmZYIUZtgLLL24BoJLKURY2B0N
-gozmFvgwDAYDVR0TBAUwAwEB/zALBgNVHQ8EBAMCAQYwCgYIKoZIzj0EAwQDaAAw
-ZQIwYwai7s2eD9By8XXtCPVHbZJ218qr9QfVqdlFMn7C78YN2+VG1SByk7aLAiQF
-AlIfAjEA/47g3R7nttZyiNvcu+x9rjKLq1GM2ZOY23tj0uQvWBY10uhM5AL+B6YU
-zsT6cgni
+MIIB/TCCAYKgAwIBAgIUNH30fnRLkt03pCWLm/rxoHDzXLswCgYIKoZIzj0EAwIw
+FjEUMBIGA1UEAwwLRWFzeS1SU0EgQ0EwHhcNMjIwMzE4MTkzNDE1WhcNMzIwMzE1
+MTkzNDE1WjAWMRQwEgYDVQQDDAtFYXN5LVJTQSBDQTB2MBAGByqGSM49AgEGBSuB
+BAAiA2IABDU/aCg94N0chFQ/GBszev44qlY98wFndPDTj+g4QWp0cglarndHJJXY
+6pOIRZkPUoMECruYToSH/8LwtHgoeNxCiqLL3mODZP3s395BL93VAc1LfY2K3gmD
+D8VtwzcZq6OBkDCBjTAdBgNVHQ4EFgQU8E9Vc7Q8ZTuNCK4aOpCQyL6cc9kwUQYD
+VR0jBEowSIAU8E9Vc7Q8ZTuNCK4aOpCQyL6cc9mhGqQYMBYxFDASBgNVBAMMC0Vh
+c3ktUlNBIENBghQ0ffR+dEuS3TekJYub+vGgcPNcuzAMBgNVHRMEBTADAQH/MAsG
+A1UdDwQEAwIBBjAKBggqhkjOPQQDAgNpADBmAjEA9tY8w6/O2zF6vkmbJO3tKxsU
+UHyRziaq92qRP3KhCUUaRqph5sOQRnai0nEI2/BMAjEAunAoJb2BcdJRdNbRMi9t
+sCcYgoUcwGfW6V8z3nR9jnOavFyGi1owc1Zj+wZjf+r1
 -----END CERTIFICATE-----
 CERT
 
- cat <<'SCERT'> /etc/openvpn/server.crt
+ cat <<'SCERT'> /etc/openvpn/certificates/server.crt
 Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number:
-            39:c1:03:c0:0d:11:6c:06:20:d7:0d:67:bc:ac:72:2d
-        Signature Algorithm: ecdsa-with-SHA512
-        Issuer: C=PH, ST=Rizal, L=Antipolo, O=Freenet Cafe, OU=Freenet Users, CN=Easy-RSA CA/emailAddress=support@freenet.cafe
+            a1:5b:c1:fe:e7:89:aa:61:bc:97:49:fb:29:8f:fc:cc
+        Signature Algorithm: ecdsa-with-SHA256
+        Issuer: CN=Easy-RSA CA
         Validity
-            Not Before: Mar  7 06:16:06 2022 GMT
-            Not After : Feb 19 06:16:06 2025 GMT
-        Subject: C=PH, ST=Rizal, L=Antipolo, O=Freenet Cafe, OU=Freenet Users, CN=server/emailAddress=support@freenet.cafe
+            Not Before: Mar 18 19:36:45 2022 GMT
+            Not After : Mar 15 19:36:45 2032 GMT
+        Subject: CN=server
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
                 Public-Key: (384 bit)
                 pub:
-                    04:29:de:39:41:16:7e:7f:f6:25:69:2f:65:da:04:
-                    10:64:b8:06:e8:41:32:92:cb:53:03:47:05:3f:5a:
-                    b7:5e:9f:19:c1:0b:30:90:23:1f:ac:bc:e9:66:15:
-                    31:03:e0:1b:9b:7b:02:c6:13:d3:95:d0:8e:5c:71:
-                    53:b7:2d:57:3e:d3:20:62:b0:f4:21:48:fe:4d:6b:
-                    ea:4a:1a:ac:92:8f:07:f4:e3:67:85:50:d1:3b:d1:
-                    b7:6f:e8:ef:76:ad:ad
+                    04:bf:5d:da:05:bb:bf:4f:a6:40:ed:6c:6b:18:1b:
+                    7b:ac:85:35:a0:cc:79:88:ea:92:7b:91:8c:52:a2:
+                    47:1a:73:af:cd:ee:be:83:c2:7b:9e:21:ba:09:4d:
+                    39:32:11:d8:29:67:cb:36:7d:97:91:03:a6:f5:17:
+                    d7:e7:fa:70:93:86:08:04:80:d2:38:71:04:93:b5:
+                    84:0d:43:fb:1d:a6:bd:c2:73:78:6b:84:88:de:ab:
+                    94:4f:76:04:5b:1e:72
                 ASN1 OID: secp384r1
                 NIST CURVE: P-384
         X509v3 extensions:
             X509v3 Basic Constraints: 
                 CA:FALSE
             X509v3 Subject Key Identifier: 
-                65:65:17:EA:88:57:35:2D:66:B3:E7:4D:A4:0C:51:72:5A:92:CB:CA
+                70:F7:BF:AB:C1:88:3E:7F:6B:95:F6:71:F7:BF:8D:11:DC:6E:98:91
             X509v3 Authority Key Identifier: 
-                keyid:C6:24:CE:F8:44:36:75:8B:EC:9A:6D:FB:5E:0C:0A:1E:E8:6F:1F:E2
-                DirName:/C=PH/ST=Rizal/L=Antipolo/O=Freenet Cafe/OU=Freenet Users/CN=Easy-RSA CA/emailAddress=support@freenet.cafe
-                serial:66:D8:0B:2C:BD:B8:06:82:4B:29:44:58:D8:1D:0D:82:8C:E6:16:F8
+                keyid:F0:4F:55:73:B4:3C:65:3B:8D:08:AE:1A:3A:90:90:C8:BE:9C:73:D9
+                DirName:/CN=Easy-RSA CA
+                serial:34:7D:F4:7E:74:4B:92:DD:37:A4:25:8B:9B:FA:F1:A0:70:F3:5C:BB
 
             X509v3 Extended Key Usage: 
                 TLS Web Server Authentication
@@ -399,94 +387,131 @@ Certificate:
                 Digital Signature, Key Encipherment
             X509v3 Subject Alternative Name: 
                 DNS:server
-    Signature Algorithm: ecdsa-with-SHA512
-         30:66:02:31:00:b0:06:cb:77:54:a6:b0:46:48:69:54:7d:8f:
-         cc:67:f1:52:b0:21:ef:a0:4b:4f:e4:e9:94:07:eb:d4:34:75:
-         10:af:d2:f3:20:34:ff:d2:4e:1c:dd:2d:ba:b4:dd:55:08:02:
-         31:00:d4:9a:93:a5:33:2b:bb:15:99:0a:7e:75:26:94:b3:89:
-         d8:36:06:7b:12:2e:ea:e5:38:15:91:1d:33:00:c9:c6:54:55:
-         10:91:89:58:bb:c4:e2:b4:e2:ed:af:34:49:71
+    Signature Algorithm: ecdsa-with-SHA256
+         30:66:02:31:00:99:bb:23:68:15:c5:e5:1f:82:ff:0d:01:90:
+         4c:e3:f2:4a:05:58:82:16:bf:db:75:f9:a9:d1:b8:f2:e9:77:
+         a0:e4:1b:30:23:b0:6f:61:b3:a0:0c:a6:e3:bc:90:87:27:02:
+         31:00:bc:1f:34:6c:91:52:6b:be:1c:78:c4:45:18:4d:1e:02:
+         c8:2b:75:0d:e9:4f:e6:86:65:ab:7f:fd:9a:db:f6:63:34:42:
+         64:d7:b0:68:cd:2a:5e:1e:f8:71:26:5b:b5:2b
 -----BEGIN CERTIFICATE-----
-MIIDrzCCAzSgAwIBAgIQOcEDwA0RbAYg1w1nvKxyLTAKBggqhkjOPQQDBDCBmjEL
-MAkGA1UEBhMCUEgxDjAMBgNVBAgMBVJpemFsMREwDwYDVQQHDAhBbnRpcG9sbzEV
-MBMGA1UECgwMRnJlZW5ldCBDYWZlMRYwFAYDVQQLDA1GcmVlbmV0IFVzZXJzMRQw
-EgYDVQQDDAtFYXN5LVJTQSBDQTEjMCEGCSqGSIb3DQEJARYUc3VwcG9ydEBmcmVl
-bmV0LmNhZmUwHhcNMjIwMzA3MDYxNjA2WhcNMjUwMjE5MDYxNjA2WjCBlTELMAkG
-A1UEBhMCUEgxDjAMBgNVBAgMBVJpemFsMREwDwYDVQQHDAhBbnRpcG9sbzEVMBMG
-A1UECgwMRnJlZW5ldCBDYWZlMRYwFAYDVQQLDA1GcmVlbmV0IFVzZXJzMQ8wDQYD
-VQQDDAZzZXJ2ZXIxIzAhBgkqhkiG9w0BCQEWFHN1cHBvcnRAZnJlZW5ldC5jYWZl
-MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEKd45QRZ+f/YlaS9l2gQQZLgG6EEykstT
-A0cFP1q3Xp8ZwQswkCMfrLzpZhUxA+Abm3sCxhPTldCOXHFTty1XPtMgYrD0IUj+
-TWvqShqsko8H9ONnhVDRO9G3b+jvdq2to4IBQDCCATwwCQYDVR0TBAIwADAdBgNV
-HQ4EFgQUZWUX6ohXNS1ms+dNpAxRclqSy8owgdoGA1UdIwSB0jCBz4AUxiTO+EQ2
-dYvsmm37XgwKHuhvH+KhgaCkgZ0wgZoxCzAJBgNVBAYTAlBIMQ4wDAYDVQQIDAVS
-aXphbDERMA8GA1UEBwwIQW50aXBvbG8xFTATBgNVBAoMDEZyZWVuZXQgQ2FmZTEW
-MBQGA1UECwwNRnJlZW5ldCBVc2VyczEUMBIGA1UEAwwLRWFzeS1SU0EgQ0ExIzAh
-BgkqhkiG9w0BCQEWFHN1cHBvcnRAZnJlZW5ldC5jYWZlghRm2AssvbgGgkspRFjY
-HQ2CjOYW+DATBgNVHSUEDDAKBggrBgEFBQcDATALBgNVHQ8EBAMCBaAwEQYDVR0R
-BAowCIIGc2VydmVyMAoGCCqGSM49BAMEA2kAMGYCMQCwBst3VKawRkhpVH2PzGfx
-UrAh76BLT+TplAfr1DR1EK/S8yA0/9JOHN0turTdVQgCMQDUmpOlMyu7FZkKfnUm
-lLOJ2DYGexIu6uU4FZEdMwDJxlRVEJGJWLvE4rTi7a80SXE=
+MIICGjCCAZ+gAwIBAgIRAKFbwf7niaphvJdJ+ymP/MwwCgYIKoZIzj0EAwIwFjEU
+MBIGA1UEAwwLRWFzeS1SU0EgQ0EwHhcNMjIwMzE4MTkzNjQ1WhcNMzIwMzE1MTkz
+NjQ1WjARMQ8wDQYDVQQDDAZzZXJ2ZXIwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAS/
+XdoFu79PpkDtbGsYG3ushTWgzHmI6pJ7kYxSokcac6/N7r6DwnueIboJTTkyEdgp
+Z8s2fZeRA6b1F9fn+nCThggEgNI4cQSTtYQNQ/sdpr3Cc3hrhIjeq5RPdgRbHnKj
+gbUwgbIwCQYDVR0TBAIwADAdBgNVHQ4EFgQUcPe/q8GIPn9rlfZx97+NEdxumJEw
+UQYDVR0jBEowSIAU8E9Vc7Q8ZTuNCK4aOpCQyL6cc9mhGqQYMBYxFDASBgNVBAMM
+C0Vhc3ktUlNBIENBghQ0ffR+dEuS3TekJYub+vGgcPNcuzATBgNVHSUEDDAKBggr
+BgEFBQcDATALBgNVHQ8EBAMCBaAwEQYDVR0RBAowCIIGc2VydmVyMAoGCCqGSM49
+BAMCA2kAMGYCMQCZuyNoFcXlH4L/DQGQTOPySgVYgha/23X5qdG48ul3oOQbMCOw
+b2GzoAym47yQhycCMQC8HzRskVJrvhx4xEUYTR4CyCt1DelP5oZlq3/9mtv2YzRC
+ZNewaM0qXh74cSZbtSs=
 -----END CERTIFICATE-----
 SCERT
 
- cat <<'SKEY' > /etc/openvpn/server.key
+ cat <<'SKEY' > /etc/openvpn/certificates/server.key
 -----BEGIN PRIVATE KEY-----
-MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDBwqyRpOMK+4SyeAvml
-k51HIxCRyaduJtk6SlGP4lfvEGPHP49BNr8Z0XnKpnrSrZChZANiAAQp3jlBFn5/
-9iVpL2XaBBBkuAboQTKSy1MDRwU/WrdenxnBCzCQIx+svOlmFTED4BubewLGE9OV
-0I5ccVO3LVc+0yBisPQhSP5Na+pKGqySjwf042eFUNE70bdv6O92ra0=
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDB9GFQq8I1R0E5HqmyN
+K5dn/EvbG8DeHddWLB8CYCsALo+UaYbxebUvVumkxwGmSaqhZANiAAS/XdoFu79P
+pkDtbGsYG3ushTWgzHmI6pJ7kYxSokcac6/N7r6DwnueIboJTTkyEdgpZ8s2fZeR
+A6b1F9fn+nCThggEgNI4cQSTtYQNQ/sdpr3Cc3hrhIjeq5RPdgRbHnI=
 -----END PRIVATE KEY-----
 SKEY
 
-cat <<'TAK' > /etc/openvpn/ta.key
+cat <<'TAK' > /etc/openvpn/certificates/ta.key
 #
 # 2048 bit OpenVPN static key
 #
 -----BEGIN OpenVPN Static key V1-----
-c421c913ad9a79e1e29e18981dd4671f
-a78a62b541d86443a6b23be3c1357e18
-e3d05e7185b7b7cc5dac328af30d5824
-833e4b11c5a2e17d3e04bebf221ba0b5
-069eeb3e541961265d34ee95a12d5ea9
-9b76abf3341e9fed7e7e829a51eb98ab
-de2ce42414ad7421d8c57fb8f29ea5af
-9f9ef427e49944713a7ee6b0b5c3beb5
-cb4714ab23c30b8301f6f1823a26de99
-36dd86feb1f94d9801949523af2404f0
-312ebdf8b39859f4658fb6d20c3f3f15
-3583e9503462778f6f6fc6fe52c09f32
-6ce2db37a37596f9fa7a44a9a38a2bd9
-47c0e92102f0b0f05c5809d44324a806
-8fa7104b2732642c61dd91e5de7f6d0d
-f265e3ca3ca02a2f15b5e7ec78b7e7a9
+172be86093890bb827d0c03b7cd60835
+8e76c0da47337c15ab22287500915fe1
+728b86664823ceccd2595e2781d5acef
+428146ec3f13ee005608cc8bc98d64e9
+7fd51b396b22e34906c38bc956af2174
+18987125fad057280de4a0c16d18cda1
+66b635babd7d23c950046ae68e86f4bd
+dab3e08b2f76d517e21d09c661b8c4eb
+3c60edb292bfc66f3974b112741ff5f5
+8aabc3982ee2a3ae5d6b9dfedf24312d
+e2477f08feac84bf7fbe89b233e6d6a8
+db9fb65f5d8dab3de61497837ded52da
+cb47b2bfc9644512e85f60e9b20e289e
+97fed7e79881cc3befe40d835a94c713
+6c4c5d0c667c75b38235c6310ec8b9ab
+3edb2283397e85e14a1b9f935d4667ba
 -----END OpenVPN Static key V1-----
 TAK
 
-cat <<'confkey' > /etc/openvpn/conf.crt
+cat <<'clientkey' > /etc/openvpn/certificates/ckey.key
+-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDAJr0n/pKoD7rubXqFI
+PUe4tKmOCFXmq4YRFKpcGddtcczvlfBmtNHCcCo3OjTgWOahZANiAATVlCL4CFD6
+u5vvFo+1Y0nL/d2bKKWwCAxunWlP4SBIfKvYar7w8hO2wn4xVgAkN8WYfTIJJOn4
+cWpEI2d5L9sahAmyX3UBoCbBa2vNtIGcHPyD9rPFHKRJ7ZSDf6DhCqs=
+-----END PRIVATE KEY-----
+clientkey
+
+cat <<'clientcert' > /etc/openvpn/certificates/ccert.crt
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            41:fd:1c:7c:6b:27:02:73:6d:3b:17:39:c6:90:6c:39
+        Signature Algorithm: ecdsa-with-SHA256
+        Issuer: CN=Easy-RSA CA
+        Validity
+            Not Before: Mar 18 19:39:04 2022 GMT
+            Not After : Mar 15 19:39:04 2032 GMT
+        Subject: CN=client1
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:d5:94:22:f8:08:50:fa:bb:9b:ef:16:8f:b5:63:
+                    49:cb:fd:dd:9b:28:a5:b0:08:0c:6e:9d:69:4f:e1:
+                    20:48:7c:ab:d8:6a:be:f0:f2:13:b6:c2:7e:31:56:
+                    00:24:37:c5:98:7d:32:09:24:e9:f8:71:6a:44:23:
+                    67:79:2f:db:1a:84:09:b2:5f:75:01:a0:26:c1:6b:
+                    6b:cd:b4:81:9c:1c:fc:83:f6:b3:c5:1c:a4:49:ed:
+                    94:83:7f:a0:e1:0a:ab
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                FE:2B:1A:EA:60:05:DC:1E:23:12:CC:83:B8:2A:CB:FA:B3:A5:10:29
+            X509v3 Authority Key Identifier: 
+                keyid:F0:4F:55:73:B4:3C:65:3B:8D:08:AE:1A:3A:90:90:C8:BE:9C:73:D9
+                DirName:/CN=Easy-RSA CA
+                serial:34:7D:F4:7E:74:4B:92:DD:37:A4:25:8B:9B:FA:F1:A0:70:F3:5C:BB
+
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication
+            X509v3 Key Usage: 
+                Digital Signature
+    Signature Algorithm: ecdsa-with-SHA256
+         30:66:02:31:00:c2:e0:44:02:52:90:5e:65:3f:2c:c0:d9:d1:
+         85:d0:f4:53:d9:d2:62:c7:21:8d:41:50:c8:5d:47:d0:b6:41:
+         1f:f9:a1:8c:a2:88:98:da:28:38:a8:a1:d9:e0:aa:20:a2:02:
+         31:00:c2:38:9a:0e:74:2d:60:e9:e7:20:34:ec:ab:28:45:33:
+         9b:0a:75:70:a1:89:f5:38:e2:87:fa:88:8d:00:5b:5d:cc:7b:
+         14:80:19:16:eb:58:84:8c:4a:d5:3f:4d:e6:7f
 -----BEGIN CERTIFICATE-----
-MIIDrzCCAzSgAwIBAgIQOcEDwA0RbAYg1w1nvKxyLTAKBggqhkjOPQQDBDCBmjEL
-MAkGA1UEBhMCUEgxDjAMBgNVBAgMBVJpemFsMREwDwYDVQQHDAhBbnRpcG9sbzEV
-MBMGA1UECgwMRnJlZW5ldCBDYWZlMRYwFAYDVQQLDA1GcmVlbmV0IFVzZXJzMRQw
-EgYDVQQDDAtFYXN5LVJTQSBDQTEjMCEGCSqGSIb3DQEJARYUc3VwcG9ydEBmcmVl
-bmV0LmNhZmUwHhcNMjIwMzA3MDYxNjA2WhcNMjUwMjE5MDYxNjA2WjCBlTELMAkG
-A1UEBhMCUEgxDjAMBgNVBAgMBVJpemFsMREwDwYDVQQHDAhBbnRpcG9sbzEVMBMG
-A1UECgwMRnJlZW5ldCBDYWZlMRYwFAYDVQQLDA1GcmVlbmV0IFVzZXJzMQ8wDQYD
-VQQDDAZzZXJ2ZXIxIzAhBgkqhkiG9w0BCQEWFHN1cHBvcnRAZnJlZW5ldC5jYWZl
-MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEKd45QRZ+f/YlaS9l2gQQZLgG6EEykstT
-A0cFP1q3Xp8ZwQswkCMfrLzpZhUxA+Abm3sCxhPTldCOXHFTty1XPtMgYrD0IUj+
-TWvqShqsko8H9ONnhVDRO9G3b+jvdq2to4IBQDCCATwwCQYDVR0TBAIwADAdBgNV
-HQ4EFgQUZWUX6ohXNS1ms+dNpAxRclqSy8owgdoGA1UdIwSB0jCBz4AUxiTO+EQ2
-dYvsmm37XgwKHuhvH+KhgaCkgZ0wgZoxCzAJBgNVBAYTAlBIMQ4wDAYDVQQIDAVS
-aXphbDERMA8GA1UEBwwIQW50aXBvbG8xFTATBgNVBAoMDEZyZWVuZXQgQ2FmZTEW
-MBQGA1UECwwNRnJlZW5ldCBVc2VyczEUMBIGA1UEAwwLRWFzeS1SU0EgQ0ExIzAh
-BgkqhkiG9w0BCQEWFHN1cHBvcnRAZnJlZW5ldC5jYWZlghRm2AssvbgGgkspRFjY
-HQ2CjOYW+DATBgNVHSUEDDAKBggrBgEFBQcDATALBgNVHQ8EBAMCBaAwEQYDVR0R
-BAowCIIGc2VydmVyMAoGCCqGSM49BAMEA2kAMGYCMQCwBst3VKawRkhpVH2PzGfx
-UrAh76BLT+TplAfr1DR1EK/S8yA0/9JOHN0turTdVQgCMQDUmpOlMyu7FZkKfnUm
-lLOJ2DYGexIu6uU4FZEdMwDJxlRVEJGJWLvE4rTi7a80SXE=
+MIICBzCCAYygAwIBAgIQQf0cfGsnAnNtOxc5xpBsOTAKBggqhkjOPQQDAjAWMRQw
+EgYDVQQDDAtFYXN5LVJTQSBDQTAeFw0yMjAzMTgxOTM5MDRaFw0zMjAzMTUxOTM5
+MDRaMBIxEDAOBgNVBAMMB2NsaWVudDEwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAATV
+lCL4CFD6u5vvFo+1Y0nL/d2bKKWwCAxunWlP4SBIfKvYar7w8hO2wn4xVgAkN8WY
+fTIJJOn4cWpEI2d5L9sahAmyX3UBoCbBa2vNtIGcHPyD9rPFHKRJ7ZSDf6DhCquj
+gaIwgZ8wCQYDVR0TBAIwADAdBgNVHQ4EFgQU/isa6mAF3B4jEsyDuCrL+rOlECkw
+UQYDVR0jBEowSIAU8E9Vc7Q8ZTuNCK4aOpCQyL6cc9mhGqQYMBYxFDASBgNVBAMM
+C0Vhc3ktUlNBIENBghQ0ffR+dEuS3TekJYub+vGgcPNcuzATBgNVHSUEDDAKBggr
+BgEFBQcDAjALBgNVHQ8EBAMCB4AwCgYIKoZIzj0EAwIDaQAwZgIxAMLgRAJSkF5l
+PyzA2dGF0PRT2dJixyGNQVDIXUfQtkEf+aGMooiY2ig4qKHZ4KogogIxAMI4mg50
+LWDp5yA07KsoRTObCnVwoYn1OOKH+oiNAFtdzHsUgBkW61iEjErVP03mfw==
 -----END CERTIFICATE-----
-confkey
+clientcert
 
  # setting openvpn server port
  sed -i "s|MyOvpnPort1|$OpenVPN_Port1|g" /etc/openvpn/server_tcp.conf
@@ -587,6 +612,9 @@ myPrivoxy
  apt remove --purge squid -y
  rm -rf /etc/squid/sq*
  apt install squid -y
+ 
+# Squid Ports (must be 1024 or higher)
+
  cat <<mySquid > /etc/squid/squid.conf
 acl VPN dst $(wget -4qO- http://ipinfo.io/ip)/32
 http_access allow VPN
@@ -647,38 +675,39 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
+http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 resolv-retry infinite
 nobind
-auth-user-pass
+user nobody
+group nogroup
 persist-key
 persist-tun
 mute-replay-warnings
 remote-cert-tls server
 cipher AES-256-GCM
-auth SHA256
+auth sha256
 verb 3
 mute 20
 key-direction 1
 compress lz4
 http-proxy-option AGENT Chrome/80.0.3987.87
-http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
 http-proxy-option CUSTOM-HEADER Host vt.tiktok.com
 http-proxy-option CUSTOM-HEADER X-Forward-Host vt.tiktok.com
 http-proxy-option CUSTOM-HEADER X-Forwarded-For vt.tiktok.com
-http-proxy-option CUSTOM-HEADER Referrer api.twitter.com
+http-proxy-option CUSTOM-HEADER Referrer vt.tiktok.com
 
 <ca>
-$(cat /etc/openvpn/ca.crt)
+$(cat /etc/openvpn/certificates/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/conf.crt)
+$(cat /etc/openvpn/certificates/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/server.key)
+$(cat /etc/openvpn/certificates/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/ta.key)
+$(cat /etc/openvpn/certificates/ta.key)
 </tls-crypt>
 EOF152
 
@@ -689,13 +718,14 @@ proto tcp
 remote $IPADDR $OpenVPN_Port2
 resolv-retry infinite
 nobind
-auth-user-pass
+user nobody
+group nogroup
 persist-key
 persist-tun
 mute-replay-warnings
 remote-cert-tls server
 cipher AES-256-GCM
-auth SHA256
+auth sha256
 verb 3
 mute 20
 key-direction 1
@@ -709,16 +739,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: mobile.garena.my"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/ca.crt)
+$(cat /etc/openvpn/certificates/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/conf.crt)
+$(cat /etc/openvpn/certificates/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/server.key)
+$(cat /etc/openvpn/certificates/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/ta.key)
+$(cat /etc/openvpn/certificates/ta.key)
 </tls-crypt>
 EOF16
 
@@ -729,13 +759,14 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 nobind
-auth-user-pass
+user nobody
+group nogroup
 persist-key
 persist-tun
 mute-replay-warnings
 remote-cert-tls server
 cipher AES-256-GCM
-auth SHA256
+auth sha256
 verb 3
 mute 20
 key-direction 1
@@ -749,16 +780,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: c3cdn.ml.youngjoygame.com"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/ca.crt)
+$(cat /etc/openvpn/certificates/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/conf.crt)
+$(cat /etc/openvpn/certificates/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/server.key)
+$(cat /etc/openvpn/certificates/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/ta.key)
+$(cat /etc/openvpn/certificates/ta.key)
 </tls-crypt>
 EOF18
 
@@ -769,13 +800,14 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 nobind
-auth-user-pass
+user nobody
+group nogroup
 persist-key
 persist-tun
 mute-replay-warnings
 remote-cert-tls server
 cipher AES-256-GCM
-auth SHA256
+auth sha256
 verb 3
 mute 20
 key-direction 1
@@ -789,16 +821,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: staging.iwant.ph"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/ca.crt)
+$(cat /etc/openvpn/certificates/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/conf.crt)
+$(cat /etc/openvpn/certificates/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/server.key)
+$(cat /etc/openvpn/certificates/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/ta.key)
+$(cat /etc/openvpn/certificates/ta.key)
 </tls-crypt>
 EOF601
 
@@ -809,13 +841,14 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 nobind
-auth-user-pass
+user nobody
+group nogroup
 persist-key
 persist-tun
 mute-replay-warnings
 remote-cert-tls server
 cipher AES-256-GCM
-auth SHA256
+auth sha256
 verb 3
 mute 20
 key-direction 1
@@ -829,16 +862,16 @@ http-proxy-option CUSTOM-HEADER "X-Forward-Host: redirect.googlevideo.com"
 http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
 
 <ca>
-$(cat /etc/openvpn/ca.crt)
+$(cat /etc/openvpn/certificates/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/conf.crt)
+$(cat /etc/openvpn/certificates/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/server.key)
+$(cat /etc/openvpn/certificates/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/ta.key)
+$(cat /etc/openvpn/certificates/ta.key)
 </tls-crypt>
 EOF600
 
@@ -849,29 +882,30 @@ proto udp
 remote $IPADDR $OpenVPN_Port3
 resolv-retry infinite
 nobind
-auth-user-pass
+user nobody
+group nogroup
 persist-key
 persist-tun
 mute-replay-warnings
 remote-cert-tls server
 cipher AES-256-GCM
-auth SHA256
+auth sha256
 verb 3
 mute 20
 key-direction 1
 compress lz4
 
 <ca>
-$(cat /etc/openvpn/ca.crt)
+$(cat /etc/openvpn/certificates/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/conf.crt)
+$(cat /etc/openvpn/certificates/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/server.key)
+$(cat /etc/openvpn/certificates/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/ta.key)
+$(cat /etc/openvpn/certificates/ta.key)
 </tls-crypt>
 EOF160
 
@@ -880,36 +914,38 @@ client
 dev tun
 proto udp
 remote $IPADDR $OpenVPN_Port4
+remote-cert-tls server
 resolv-retry infinite
 nobind
-auth-user-pass
+user nobody
+group nogroup
 persist-key
 persist-tun
 mute-replay-warnings
 remote-cert-tls server
 cipher AES-256-GCM
-auth SHA256
+auth sha256
 verb 3
 mute 20
 key-direction 1
 compress lz4
 
 <ca>
-$(cat /etc/openvpn/ca.crt)
+$(cat /etc/openvpn/certificates/ca.crt)
 </ca>
 <cert>
-$(cat /etc/openvpn/conf.crt)
+$(cat /etc/openvpn/certificates/ccert.crt)
 </cert>
 <key>
-$(cat /etc/openvpn/server.key)
+$(cat /etc/openvpn/certificates/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/ta.key)
+$(cat /etc/openvpn/certificates/ta.key)
 </tls-crypt>
 EOF17
 
 
- cat <<NOTE > /var/www/openvpn/ENJOY.txt
+cat <<NOTE > /var/www/openvpn/ENJOY.txt
         **ENJOY AND HAVE FUN**
    <3 THANK YOU FOR THE SUPPORT <3
      ## HOPE YOU WILL BE ABLE ##
@@ -920,9 +956,7 @@ NOTE
 cat <<'mySiteOvpn' > /var/www/openvpn/index.html
 <!DOCTYPE html>
 <html lang="en">
-
 <!-- GVPNHUB CONF SITE -->
-
 <head>
 <meta charset="utf-8" />
 <title>FREENET OVPN</title>
@@ -980,7 +1014,6 @@ cat <<'mySiteOvpn' > /var/www/openvpn/index.html
                         <small>Giga Promos</small>
                     </p>
                     <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/GGames.ovpn" style="float:right;"><i class="fa fa-download"></i> Games/Ml</a>
-
                     <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/WildRift.ovpn" style="float:right;"><i class="fa fa-download"></i> Games/WR</a>                        
                  
                     <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/GStories.ovpn" style="float:right;"><i class="fa fa-download"></i> Stories</a>                        
@@ -1115,6 +1148,13 @@ chmod +x /etc/profile.d/juans.sh
 
  # Turning Off Multi-login Auto Kill
  rm -f /etc/cron.d/set_multilogin_autokill_lib
+ 
+ # removing and installing sysctl.conf for bbr installation
+ rm -f /etc/sysctl.conf
+ wget -q https://github.com/yue0706/parte/raw/main/sysctl.conf
+ chmod -R 777 sysctl.conf
+ mv sysctl.conf /etc/
+ 
 }
 
 function ScriptMessage(){
@@ -1170,31 +1210,9 @@ fi
  
  # Setting server local time
  ln -fs /usr/share/zoneinfo/$MyVPS_Time /etc/localtime
-
- wget -qO /etc/ssh/ssht https://github.com/yakult13/ws/raw/main/services.py
-chmod +x services.py
-cat << END > /lib/systemd/system/ssht.service
-[Unit]
-Description=Websocket
-Documentation=https://google.com
-After=network.target nss-lookup.target
-[Service]
-Type=simple
-User=root
-NoNewPrivileges=true
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
-ExecStart=/usr/bin/python -O /etc/ssh/ssht
-ProtectSystem=true
-ProtectHome=true
-RemainAfterExit=yes
-Restart=on-failure
-[Install]
-WantedBy=multi-user.target
-END
-systemctl daemon-reload
-systemctl enable ssht
-systemctl restart ssht
+ 
+ # restarting sysctl.conf to update
+ sysctl -p
  
  clear
  cd ~
