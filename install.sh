@@ -214,7 +214,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -249,7 +249,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -284,7 +284,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -319,7 +319,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth SHA256
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -685,7 +685,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth sha256
 verb 3
 mute 20
@@ -726,7 +726,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth sha256
 verb 3
 mute 20
@@ -768,7 +768,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth sha256
 verb 3
 mute 20
@@ -810,7 +810,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth sha256
 verb 3
 mute 20
@@ -852,7 +852,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth sha256
 verb 3
 mute 20
@@ -894,7 +894,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth sha256
 verb 3
 mute 20
@@ -930,7 +930,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-256-GCM
+cipher AES-128-CBC
 auth sha256
 verb 3
 mute 20
