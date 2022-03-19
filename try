@@ -1,0 +1,1290 @@
+#!/bin/bash
+# VPS Installer
+# Script by Juan
+# 
+# Illegal selling and redistribution of this script is strictly prohibited
+# Please respect author's Property
+# Binigay sainyo ng libre, ipamahagi nyo rin ng libre.
+#
+#
+
+ # Now check if our machine is in root user, if not, this script exits
+ # If you're on sudo user, run `sudo su -` first before running this script
+if [[ $EUID -ne 0 ]];then
+ ScriptMessage
+ echo -e "[\e[1;31mError\e[0m] This script must be run as root, exiting..."
+ exit 1
+fi
+MyScriptName='FreenetCafe'
+SSH_Port1='22'
+SSH_Port2='225'
+SSH_Banner='https://github.com/yakult13/parte/raw/main/cafe'
+Dropbear_Port1='550'
+Dropbear_Port2='555'
+Stunnel_Port1='443'
+Stunnel_Port2='444'
+Proxy_Port1='8080'
+Proxy_Port2='8000'
+OpenVPN_Port1='110'
+OpenVPN_Port2='112'
+OpenVPN_Port3='1194'
+OpenVPN_Port4='25888'
+Privoxy_Port1='8686'
+Privoxy_Port2='8787'
+OvpnDownload_Port='1998'
+MyVPS_Time='Asia/Manila'
+
+function  Instupdate() {
+export DEBIAN_FRONTEND=noninteractive
+ apt-get update
+ apt-get upgrade -y
+ apt install fail2ban -y
+ apt-get remove --purge ufw firewalld -y
+ apt-get install nano wget curl zip unzip tar gzip p7zip-full bc rc openssl cron net-tools dnsutils dos2unix screen bzip2 ccrypt -y
+ apt-get install dropbear stunnel4 privoxy ca-certificates nginx ruby apt-transport-https lsb-release squid screenfetch -y
+ apt-get install perl libnet-ssleay-perl openssl libauthen-pam-perl libpam-runtime libio-pty-perl apt-show-versions python dbus libxml-parser-perl -y
+ apt-get install shared-mime-info jq -y
+ gem install lolcat
+ apt-get autoremove -y
+ echo "deb http://build.openvpn.net/debian/openvpn/stable $(lsb_release -sc) main" >/etc/apt/sources.list.d/openvpn.list && apt-key del E158C569 && wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+ wget -qO security-openvpn-net.asc "https://keys.openpgp.org/vks/v1/by-fingerprint/F554A3687412CFFEBDEFE0A312F5F7B42F2B01E7" && gpg --import security-openvpn-net.asc
+ apt-get update -y
+ apt-get install openvpn -y
+}
+
+function InstWebmin(){
+ WebminFile='http://prdownloads.sourceforge.net/webadmin/webmin_1.910_all.deb'
+ wget -qO webmin.deb "$WebminFile"
+ dpkg --install webmin.deb
+ rm -rf webmin.deb
+ sed -i 's|ssl=1|ssl=0|g' /etc/webmin/miniserv.conf
+ systemctl restart webmin
+}
+
+function InstSSH(){
+ rm -f /etc/ssh/sshd_config*
+ cat <<'MySSHConfig' > /etc/ssh/sshd_config
+# My OpenSSH Server config
+Port myPORT1
+Port myPORT2
+AddressFamily inet
+ListenAddress 0.0.0.0
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+PermitRootLogin yes
+MaxSessions 1024
+PubkeyAuthentication yes
+PasswordAuthentication yes
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+UsePAM yes
+X11Forwarding yes
+PrintMotd no
+ClientAliveInterval 240
+ClientAliveCountMax 2
+UseDNS no
+Banner /etc/banner
+AcceptEnv LANG LC_*
+Subsystem   sftp  /usr/lib/openssh/sftp-server
+MySSHConfig
+
+ sed -i "s|myPORT1|$SSH_Port1|g" /etc/ssh/sshd_config
+ sed -i "s|myPORT2|$SSH_Port2|g" /etc/ssh/sshd_config
+
+ rm -f /etc/banner
+ wget -qO /etc/banner "$SSH_Banner"
+ dos2unix -q /etc/banner
+
+ sed -i '/password\s*requisite\s*pam_cracklib.s.*/d' /etc/pam.d/common-password
+ sed -i 's/use_authtok //g' /etc/pam.d/common-password
+ sed -i '/\/bin\/false/d' /etc/shells
+ sed -i '/\/usr\/sbin\/nologin/d' /etc/shells
+ echo '/bin/false' >> /etc/shells
+ echo '/usr/sbin/nologin' >> /etc/shells
+ 
+ systemctl restart ssh
+
+ rm -rf /etc/default/dropbear*
+ 
+ # creating dropbear config using cat eof tricks
+ cat <<'MyDropbear' > /etc/default/dropbear
+# My Dropbear Config
+NO_START=0
+DROPBEAR_PORT=PORT01
+DROPBEAR_EXTRA_ARGS="-p PORT02"
+DROPBEAR_BANNER="/etc/banner"
+DROPBEAR_RSAKEY="/etc/dropbear/dropbear_rsa_host_key"
+DROPBEAR_DSSKEY="/etc/dropbear/dropbear_dss_host_key"
+DROPBEAR_ECDSAKEY="/etc/dropbear/dropbear_ecdsa_host_key"
+DROPBEAR_RECEIVE_WINDOW=65536
+MyDropbear
+
+ # Now changing our desired dropbear ports
+ sed -i "s|PORT01|$Dropbear_Port1|g" /etc/default/dropbear
+ sed -i "s|PORT02|$Dropbear_Port2|g" /etc/default/dropbear
+ 
+ # Restarting dropbear service
+ systemctl restart dropbear
+}
+
+function InsStunnel(){
+ StunnelDir=$(ls /etc/default | grep stunnel | head -n1)
+
+ # Creating stunnel startup config using cat eof tricks
+cat <<'MyStunnelD' > /etc/default/$StunnelDir
+# My Stunnel Config
+ENABLED=1
+FILES="/etc/stunnel/*.conf"
+OPTIONS="/etc/banner"
+BANNER="/etc/banner"
+PPP_RESTART=0
+# RLIMITS="-n 4096 -d unlimited"
+RLIMITS=""
+MyStunnelD
+
+ # Removing all stunnel folder contents
+ rm -rf /etc/stunnel/*
+ 
+ # Creating stunnel certifcate using openssl
+ openssl req -new -x509 -days 9999 -nodes -subj "/C=PH/ST=NCR/L=Manila/O=$MyScriptName/OU=$MyScriptName/CN=$MyScriptName" -out /etc/stunnel/stunnel.pem -keyout /etc/stunnel/stunnel.pem &> /dev/null
+##  > /dev/null 2>&1
+
+ # Creating stunnel server config
+ cat <<'MyStunnelC' > /etc/stunnel/stunnel.conf
+# My Stunnel Config
+pid = /var/run/stunnel.pid
+cert = /etc/stunnel/stunnel.pem
+client = no
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+TIMEOUTclose = 0
+
+[dropbear]
+accept = Stunnel_Port1
+connect = 127.0.0.1:dropbear_port_c
+
+[openssh]
+accept = Stunnel_Port2
+connect = 127.0.0.1:openssh_port_c
+MyStunnelC
+
+ # setting stunnel ports
+ sed -i "s|Stunnel_Port1|$Stunnel_Port1|g" /etc/stunnel/stunnel.conf
+ sed -i "s|dropbear_port_c|$(netstat -tlnp | grep -i dropbear | awk '{print $4}' | cut -d: -f2 | xargs | awk '{print $2}' | head -n1)|g" /etc/stunnel/stunnel.conf
+ sed -i "s|Stunnel_Port2|$Stunnel_Port2|g" /etc/stunnel/stunnel.conf
+ sed -i "s|openssh_port_c|$(netstat -tlnp | grep -i ssh | awk '{print $4}' | cut -d: -f2 | xargs | awk '{print $2}' | head -n1)|g" /etc/stunnel/stunnel.conf
+
+ # Restarting stunnel service
+ systemctl restart $StunnelDir
+
+}
+
+function InsOpenVPN(){
+ # Checking if openvpn folder is accidentally deleted or purged
+ if [[ ! -e /etc/openvpn ]]; then
+  mkdir -p /etc/openvpn
+ fi
+
+ # Removing all existing openvpn server files
+ rm -rf /etc/openvpn/*
+
+ # Creating server.conf, ca.crt, server.crt and server.key
+ cat <<'VPN1' > /etc/openvpn/server_tcp.conf
+port MyOvpnPort1
+proto tcp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh none
+server 172.18.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4
+max-clients 4000
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
+explicit-exit-notify 0
+cipher AES-128-CBC
+auth SHA512
+push "redirect-gateway def1"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
+VPN1
+
+cat <<'VPN2' > /etc/openvpn/server_tcp1.conf
+port MyOvpnPort2
+proto tcp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh none
+server 172.19.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4
+max-clients 4000
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
+explicit-exit-notify 0
+cipher AES-128-CBC
+auth SHA512
+push "redirect-gateway def1"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
+VPN2
+
+ cat <<'VPN3' > /etc/openvpn/server_udp.conf
+port MyOvpnPort3
+proto udp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh none
+server 172.20.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4
+max-clients 4000
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
+explicit-exit-notify 0
+cipher AES-128-CBC
+auth SHA512
+push "redirect-gateway def1"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
+VPN3
+
+ cat <<'VPN4' > /etc/openvpn/server_udp1.conf
+port MyOvpnPort4
+proto udp
+dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh none
+server 172.21.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4
+max-clients 4000
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
+explicit-exit-notify 0
+cipher AES-128-CBC
+auth SHA512
+push "redirect-gateway def1"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
+VPN4
+
+ cat <<'CERT'> /etc/openvpn/ca.crt
+-----BEGIN CERTIFICATE-----
+MIICEjCCAZmgAwIBAgIUARL1xhYZpYJnqkO3aw4xun7tZsswCQYHKoZIzj0EATAe
+MRwwGgYDVQQDDBNGcmVlbmV0IENhZmUgU2VydmVyMB4XDTIyMDMxOTA4MDIyN1oX
+DTMyMDMxNjA4MDIyN1owHjEcMBoGA1UEAwwTRnJlZW5ldCBDYWZlIFNlcnZlcjB2
+MBAGByqGSM49AgEGBSuBBAAiA2IABAgoApMCyKzf9nRu0yVOjVRn29Nky7kFht6F
+qzkHQN8ijC4wAByvSAdezKpTavZTwtf5dfIHkSJGj2CeyWfzvZhOrY3GDeFRqXjT
+5xiD/GhvXQ6QQbqeXU6XDfg7S1krXaOBmDCBlTAdBgNVHQ4EFgQUFUzyLjHZLjCs
+sMfqKnUvKlsFoR8wWQYDVR0jBFIwUIAUFUzyLjHZLjCssMfqKnUvKlsFoR+hIqQg
+MB4xHDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAES9cYWGaWCZ6pDt2sO
+Mbp+7WbLMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgEGMAkGByqGSM49BAEDaAAw
+ZQIwe+Fx4E5OAzvN30Yw6WDygOcMaWLe07eLf3xBxJVJwY+eYqBlezxpja4olwv8
+EqdyAjEA2jgFYmmfOmxNFiJJq+juTtp0F9fNZJJpYk7JAZYoFDrxp8qxc4KACJTq
+xpgiir/L
+-----END CERTIFICATE-----
+CERT
+
+ cat <<'SCERT'> /etc/openvpn/server.crt
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            2a:ee:e4:76:8e:2c:a9:07:e1:d9:5e:d2:31:4a:24:fd
+        Signature Algorithm: ecdsa-with-SHA1
+        Issuer: CN=Freenet Cafe Server
+        Validity
+            Not Before: Mar 19 08:04:24 2022 GMT
+            Not After : Mar 16 08:04:24 2032 GMT
+        Subject: CN=Freenet Cafe
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:1d:0b:07:58:bc:78:2d:d8:b5:d9:c2:14:46:d2:
+                    a8:ef:d4:d8:fb:35:02:8f:d8:e5:7b:6a:16:ec:22:
+                    53:b9:ee:d8:0a:69:d5:f3:c1:ef:f8:5f:ac:63:88:
+                    70:8b:4f:c1:f5:22:f0:63:dc:fa:4a:8b:b2:31:08:
+                    ed:64:c0:b4:68:ad:a3:1b:4e:b0:51:ae:75:db:51:
+                    8b:f2:f3:33:f7:61:71:6e:b0:1d:b3:20:87:b5:d7:
+                    61:15:08:8c:fb:91:c9
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                28:01:36:08:EB:C7:22:F0:06:12:93:D6:CD:C7:E7:A0:8E:0B:11:CA
+            X509v3 Authority Key Identifier: 
+                keyid:15:4C:F2:2E:31:D9:2E:30:AC:B0:C7:EA:2A:75:2F:2A:5B:05:A1:1F
+                DirName:/CN=Freenet Cafe Server
+                serial:01:12:F5:C6:16:19:A5:82:67:AA:43:B7:6B:0E:31:BA:7E:ED:66:CB
+
+            X509v3 Extended Key Usage: 
+                TLS Web Server Authentication
+            X509v3 Key Usage: 
+                Digital Signature, Key Encipherment
+            X509v3 Subject Alternative Name: 
+                DNS:Freenet Cafe
+    Signature Algorithm: ecdsa-with-SHA1
+         30:65:02:30:39:8a:6a:1a:c5:d5:7c:f9:80:48:23:02:3e:29:
+         4f:5d:04:d4:31:bf:fa:a0:ed:be:2e:e7:9b:df:64:81:ef:e2:
+         26:9a:c0:37:81:b1:43:2d:a8:25:b3:da:bf:31:ea:87:02:31:
+         00:f6:04:7e:ef:cf:6d:04:47:39:6d:eb:65:58:4c:55:33:55:
+         99:76:c6:79:98:61:e4:e7:fa:57:67:d8:ab:2d:00:74:13:6e:
+         75:f1:58:0a:c2:fd:8d:e0:72:4d:6c:ca:13
+-----BEGIN CERTIFICATE-----
+MIICMjCCAbmgAwIBAgIQKu7kdo4sqQfh2V7SMUok/TAJBgcqhkjOPQQBMB4xHDAa
+BgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXIwHhcNMjIwMzE5MDgwNDI0WhcNMzIw
+MzE2MDgwNDI0WjAXMRUwEwYDVQQDDAxGcmVlbmV0IENhZmUwdjAQBgcqhkjOPQIB
+BgUrgQQAIgNiAAQdCwdYvHgt2LXZwhRG0qjv1Nj7NQKP2OV7ahbsIlO57tgKadXz
+we/4X6xjiHCLT8H1IvBj3PpKi7IxCO1kwLRoraMbTrBRrnXbUYvy8zP3YXFusB2z
+IIe112EVCIz7kcmjgcMwgcAwCQYDVR0TBAIwADAdBgNVHQ4EFgQUKAE2COvHIvAG
+EpPWzcfnoI4LEcowWQYDVR0jBFIwUIAUFUzyLjHZLjCssMfqKnUvKlsFoR+hIqQg
+MB4xHDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAES9cYWGaWCZ6pDt2sO
+Mbp+7WbLMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAsGA1UdDwQEAwIFoDAXBgNVHREE
+EDAOggxGcmVlbmV0IENhZmUwCQYHKoZIzj0EAQNoADBlAjA5imoaxdV8+YBIIwI+
+KU9dBNQxv/qg7b4u55vfZIHv4iaawDeBsUMtqCWz2r8x6ocCMQD2BH7vz20ERzlt
+62VYTFUzVZl2xnmYYeTn+ldn2KstAHQTbnXxWArC/Y3gck1syhM=
+-----END CERTIFICATE-----
+SCERT
+
+ cat <<'SKEY' > /etc/openvpn/server.key
+-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDDfGj6AN32hLYHR966L
+dWjiUM5V7fY2MOmYA/gMSMzNm1JG8dc/SfKV2sfqlUGAbaGhZANiAAQdCwdYvHgt
+2LXZwhRG0qjv1Nj7NQKP2OV7ahbsIlO57tgKadXzwe/4X6xjiHCLT8H1IvBj3PpK
+i7IxCO1kwLRoraMbTrBRrnXbUYvy8zP3YXFusB2zIIe112EVCIz7kck=
+-----END PRIVATE KEY-----
+SKEY
+
+cat <<'TAK' > /etc/openvpn/ta.key
+#
+# 2048 bit OpenVPN static key
+#
+-----BEGIN OpenVPN Static key V1-----
+348eb8f02e5af85ddf0bd4cd60f039b7
+08ab88f79505b2d5b2d02b28042fb457
+7382e6205dd61be8cc15672690d958bd
+c9834ffe546dfcf7b06e409c9fb8cf14
+db35f7e300e6fedd829f4ec6b60c3e9f
+02f7edaec401a5ae3a1c48e2e7efbfc0
+71322e8827072210c43476b403a312ca
+b0fd9cd27e748ec25876aa3efaf0bb70
+0aeda3353e1bf55141f0fe70592dd6b2
+dac610d9ab0d5f00d54a6d727d904a5f
+c5746038e6b7ee6434a56d3db4886e07
+f633893fd82cbca114d84bae548b8fdf
+ca8ecb557b75319c67220e035a60230d
+cb1c22e8d2246631455b234e41c1c34a
+52d119121cbe0a36005125644cc462d1
+e21d5897fa049f5839c842d146a84026
+-----END OpenVPN Static key V1-----
+TAK
+
+cat <<'clientkey' > /etc/openvpn/ckey.key
+-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDDb27O7IrLPr+mTRt89
+QyqWrNOlMmwBNnKeIYVSqWldPSQtBKUcaSYzwd6EQt7yl9qhZANiAAQrvOU/as1I
+rK/v9wbDNliwegWrLXyCrhoWWvhoiFtMXSqm+RXEJhlxEilK76JN27dzJ35asv4m
+y9s6FVgrgRYGm9T8dnP7fUVVkpV0LElmTwLerf1hU2eH64oMFfFcZ9c=
+-----END PRIVATE KEY-----
+clientkey
+
+cat <<'clientcert' > /etc/openvpn/ccert.crt
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            b1:f4:ce:bc:13:ce:b3:47:fe:e0:bc:5a:c5:d9:b7:99
+        Signature Algorithm: ecdsa-with-SHA1
+        Issuer: CN=Freenet Cafe Server
+        Validity
+            Not Before: Mar 19 08:07:27 2022 GMT
+            Not After : Mar 16 08:07:27 2032 GMT
+        Subject: CN=Freenet Cafe User
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (384 bit)
+                pub:
+                    04:2b:bc:e5:3f:6a:cd:48:ac:af:ef:f7:06:c3:36:
+                    58:b0:7a:05:ab:2d:7c:82:ae:1a:16:5a:f8:68:88:
+                    5b:4c:5d:2a:a6:f9:15:c4:26:19:71:12:29:4a:ef:
+                    a2:4d:db:b7:73:27:7e:5a:b2:fe:26:cb:db:3a:15:
+                    58:2b:81:16:06:9b:d4:fc:76:73:fb:7d:45:55:92:
+                    95:74:2c:49:66:4f:02:de:ad:fd:61:53:67:87:eb:
+                    8a:0c:15:f1:5c:67:d7
+                ASN1 OID: secp384r1
+                NIST CURVE: P-384
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                4B:A5:D5:BE:5E:BC:4B:E7:EB:DA:EE:A4:88:C6:19:A3:6D:DE:95:F0
+            X509v3 Authority Key Identifier: 
+                keyid:15:4C:F2:2E:31:D9:2E:30:AC:B0:C7:EA:2A:75:2F:2A:5B:05:A1:1F
+                DirName:/CN=Freenet Cafe Server
+                serial:01:12:F5:C6:16:19:A5:82:67:AA:43:B7:6B:0E:31:BA:7E:ED:66:CB
+
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication
+            X509v3 Key Usage: 
+                Digital Signature
+    Signature Algorithm: ecdsa-with-SHA1
+         30:64:02:30:0b:0d:9b:78:64:68:ab:98:25:5d:a6:de:c0:58:
+         16:06:58:24:c1:01:53:f4:24:a3:1d:1f:9d:ca:c6:3e:78:c3:
+         1d:df:8c:ac:9c:50:e9:a6:0f:a7:eb:93:36:df:61:76:02:30:
+         3f:cd:8f:a8:ad:94:74:54:26:50:f3:8b:c3:a8:e9:8a:f3:51:
+         aa:8f:95:45:5b:ee:4b:8a:91:53:7a:b1:57:ed:75:7b:f3:a9:
+         ed:34:ae:3b:0d:e8:49:4f:ee:50:61:7e
+-----BEGIN CERTIFICATE-----
+MIICHjCCAaagAwIBAgIRALH0zrwTzrNH/uC8WsXZt5kwCQYHKoZIzj0EATAeMRww
+GgYDVQQDDBNGcmVlbmV0IENhZmUgU2VydmVyMB4XDTIyMDMxOTA4MDcyN1oXDTMy
+MDMxNjA4MDcyN1owHDEaMBgGA1UEAwwRRnJlZW5ldCBDYWZlIFVzZXIwdjAQBgcq
+hkjOPQIBBgUrgQQAIgNiAAQrvOU/as1IrK/v9wbDNliwegWrLXyCrhoWWvhoiFtM
+XSqm+RXEJhlxEilK76JN27dzJ35asv4my9s6FVgrgRYGm9T8dnP7fUVVkpV0LElm
+TwLerf1hU2eH64oMFfFcZ9ejgaowgacwCQYDVR0TBAIwADAdBgNVHQ4EFgQUS6XV
+vl68S+fr2u6kiMYZo23elfAwWQYDVR0jBFIwUIAUFUzyLjHZLjCssMfqKnUvKlsF
+oR+hIqQgMB4xHDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAES9cYWGaWC
+Z6pDt2sOMbp+7WbLMBMGA1UdJQQMMAoGCCsGAQUFBwMCMAsGA1UdDwQEAwIHgDAJ
+BgcqhkjOPQQBA2cAMGQCMAsNm3hkaKuYJV2m3sBYFgZYJMEBU/Qkox0fncrGPnjD
+Hd+MrJxQ6aYPp+uTNt9hdgIwP82PqK2UdFQmUPOLw6jpivNRqo+VRVvuS4qRU3qx
+V+11e/Op7TSuOw3oSU/uUGF+
+-----END CERTIFICATE-----
+clientcert
+
+ # setting openvpn server port
+ sed -i "s|MyOvpnPort1|$OpenVPN_Port1|g" /etc/openvpn/server_tcp.conf
+ sed -i "s|MyOvpnPort2|$OpenVPN_Port2|g" /etc/openvpn/server_tcp1.conf
+ sed -i "s|MyOvpnPort3|$OpenVPN_Port3|g" /etc/openvpn/server_udp.conf
+ sed -i "s|MyOvpnPort4|$OpenVPN_Port4|g" /etc/openvpn/server_udp1.conf
+ 
+ # Getting some OpenVPN plugins for unix authentication
+ #wget -qO /etc/openvpn/b.zip 'https://github.com/imaPSYCHO/Parts/raw/main/openvpn_plugin64'
+ #unzip -qq /etc/openvpn/b.zip -d /etc/openvpn
+ #rm -f /etc/openvpn/b.zip
+ 
+ # Some workaround for OpenVZ machines for "Startup error" openvpn service
+ if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
+ sed -i 's|LimitNPROC|#LimitNPROC|g' /lib/systemd/system/openvpn*
+ systemctl daemon-reload
+fi
+
+ # Allow IPv4 Forwarding
+ echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/20-openvpn.conf && sysctl --system &> /dev/null && echo 1 > /proc/sys/net/ipv4/ip_forward
+
+ # Installing Firewalld
+ apt install firewalld -y
+ systemctl start firewalld
+ systemctl enable firewalld
+ firewall-cmd --quiet --set-default-zone=public
+ firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/tcp
+ firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/udp
+ firewall-cmd --quiet --reload
+ firewall-cmd --quiet --add-masquerade
+ firewall-cmd --quiet --permanent --add-masquerade
+ firewall-cmd --quiet --permanent --add-service=ssh
+ firewall-cmd --quiet --permanent --add-service=openvpn
+ firewall-cmd --quiet --permanent --add-service=http
+ firewall-cmd --quiet --permanent --add-service=https
+ firewall-cmd --quiet --permanent --add-service=privoxy
+ firewall-cmd --quiet --permanent --add-service=squid
+ firewall-cmd --quiet --reload
+ 
+ # Enabling IPv4 Forwarding
+ echo 1 > /proc/sys/net/ipv4/ip_forward
+
+ 
+ # Starting OpenVPN server
+ systemctl start openvpn@server_tcp
+ systemctl start openvpn@server_tcp1
+ systemctl start openvpn@server_udp
+ systemctl start openvpn@server_udp1
+ systemctl enable openvpn@server_tcp
+ systemctl enable openvpn@server_tcp1
+ systemctl enable openvpn@server_udp
+ systemctl enable openvpn@server_udp1
+ systemctl restart openvpn@server_tcp
+ systemctl restart openvpn@server_tcp1
+ systemctl restart openvpn@server_udp
+ systemctl restart openvpn@server_udp1
+}
+
+function InsProxy(){
+ # Removing Duplicate privoxy config
+ rm -rf /etc/privoxy/config*
+ 
+ # Creating Privoxy server config using cat eof tricks
+ cat <<'myPrivoxy' > /etc/privoxy/config
+# My Privoxy Server Config
+user-manual /usr/share/doc/privoxy/user-manual
+confdir /etc/privoxy
+logdir /var/log/privoxy
+filterfile default.filter
+logfile logfile
+listen-address 0.0.0.0:Privoxy_Port1
+listen-address 0.0.0.0:Privoxy_Port2
+toggle 1
+enable-remote-toggle 0
+enable-remote-http-toggle 0
+enable-edit-actions 0
+enforce-blocks 0
+buffer-limit 4096
+enable-proxy-authentication-forwarding 1
+forwarded-connect-retries 1
+accept-intercepted-requests 1
+allow-cgi-request-crunching 1
+split-large-forms 0
+keep-alive-timeout 5
+tolerate-pipelining 1
+socket-timeout 300
+permit-access 0.0.0.0/0 IP-ADDRESS
+myPrivoxy
+
+ # Setting machine's IP Address inside of our privoxy config(security that only allows this machine to use this proxy server)
+ sed -i "s|IP-ADDRESS|$IPADDR|g" /etc/privoxy/config
+ 
+ # Setting privoxy ports
+ sed -i "s|Privoxy_Port1|$Privoxy_Port1|g" /etc/privoxy/config
+ sed -i "s|Privoxy_Port2|$Privoxy_Port2|g" /etc/privoxy/config
+
+ # I'm setting Some Squid workarounds to prevent Privoxy's overflowing file descriptors that causing 50X error when clients trying to connect to your proxy server(thanks for this trick @homer_simpsons)
+ apt remove --purge squid -y
+ rm -rf /etc/squid/sq*
+ apt install squid -y
+ 
+# Squid Ports (must be 1024 or higher)
+
+ cat <<mySquid > /etc/squid/squid.conf
+acl VPN dst $(wget -4qO- http://ipinfo.io/ip)/32
+http_access allow VPN
+http_access deny all 
+http_port 0.0.0.0:$Proxy_Port1
+http_port 0.0.0.0:$Proxy_Port2
+coredump_dir /var/spool/squid
+dns_nameservers 1.1.1.1 1.0.0.1
+refresh_pattern ^ftp: 1440 20% 10080
+refresh_pattern ^gopher: 1440 0% 1440
+refresh_pattern -i (/cgi-bin/|\?) 0 0% 0
+refresh_pattern . 0 20% 4320
+visible_hostname localhost
+mySquid
+
+ sed -i "s|SquidCacheHelper|$Proxy_Port1|g" /etc/squid/squid.conf
+ sed -i "s|SquidCacheHelper|$Proxy_Port2|g" /etc/squid/squid.conf
+
+sudo apt install ziproxy
+ cat <<myziproxy > /etc/ziproxy/ziproxy.conf
+ Port = 2898
+ UseContentLength = false
+ ImageQuality = {30,25,25,20}
+myziproxy
+
+ # Starting Proxy server
+ echo -e "Restarting proxy server.."
+ systemctl restart privoxy
+ systemctl restart squid
+ systemctl restart ziproxy
+}
+
+function OvpnConfigs(){
+ # Creating nginx config for our ovpn config downloads webserver
+ cat <<'myNginxC' > /etc/nginx/conf.d/bonveio-ovpn-config.conf
+# My OpenVPN Config Download Directory
+server {
+ listen 0.0.0.0:myNginx;
+ server_name localhost;
+ root /var/www/openvpn;
+ index index.html;
+}
+myNginxC
+
+ # Setting our nginx config port for .ovpn download site
+ sed -i "s|myNginx|$OvpnDownload_Port|g" /etc/nginx/conf.d/bonveio-ovpn-config.conf
+
+ # Removing Default nginx page(port 80)
+ rm -rf /etc/nginx/sites-*
+
+ # Creating our root directory for all of our .ovpn configs
+ rm -rf /var/www/openvpn
+ mkdir -p /var/www/openvpn
+
+ # Now creating all of our OpenVPN Configs 
+cat <<EOF152 > /var/www/openvpn/GStories.ovpn
+client
+dev tun
+proto tcp
+remote $IPADDR $OpenVPN_Port1
+http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
+resolv-retry infinite
+nobind
+user nobody
+group nogroup
+persist-key
+persist-tun
+auth-user-pass
+mute-replay-warnings
+remote-cert-tls server
+cipher AES-128-CBC
+auth sha512
+verb 3
+mute 20
+key-direction 1
+compress lz4
+http-proxy-option AGENT Chrome/80.0.3987.87
+http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
+http-proxy-option CUSTOM-HEADER Host vt.tiktok.com
+http-proxy-option CUSTOM-HEADER X-Forward-Host vt.tiktok.com
+http-proxy-option CUSTOM-HEADER X-Forwarded-For vt.tiktok.com
+http-proxy-option CUSTOM-HEADER Referrer vt.tiktok.com
+
+<ca>
+$(cat /etc/openvpn/ca.crt)
+</ca>
+<cert>
+$(cat /etc/openvpn/ccert.crt)
+</cert>
+<key>
+$(cat /etc/openvpn/ckey.key)
+</key>
+<tls-crypt>
+$(cat /etc/openvpn/ta.key)
+</tls-crypt>
+EOF152
+
+cat <<EOF16 > /var/www/openvpn/WildRift.ovpn
+client
+dev tun
+proto tcp
+remote $IPADDR $OpenVPN_Port2
+resolv-retry infinite
+nobind
+user nobody
+group nogroup
+persist-key
+persist-tun
+auth-user-pass
+mute-replay-warnings
+remote-cert-tls server
+cipher AES-128-CBC
+auth sha512
+verb 3
+mute 20
+key-direction 1
+compress lz4
+http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port2
+http-proxy-option AGENT Chrome/80.0.3987.87
+http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
+http-proxy-option CUSTOM-HEADER "Host: mobile.garena.my"
+http-proxy-option CUSTOM-HEADER "X-Online-Host: mobile.garena.my"
+http-proxy-option CUSTOM-HEADER "X-Forward-Host: mobile.garena.my"
+http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
+
+<ca>
+$(cat /etc/openvpn/ca.crt)
+</ca>
+<cert>
+$(cat /etc/openvpn/ccert.crt)
+</cert>
+<key>
+$(cat /etc/openvpn/ckey.key)
+</key>
+<tls-crypt>
+$(cat /etc/openvpn/ta.key)
+</tls-crypt>
+EOF16
+
+cat <<EOF18 > /var/www/openvpn/GGames.ovpn
+client
+dev tun
+proto tcp
+remote $IPADDR $OpenVPN_Port1
+resolv-retry infinite
+nobind
+user nobody
+group nogroup
+persist-key
+persist-tun
+auth-user-pass
+mute-replay-warnings
+remote-cert-tls server
+cipher AES-128-CBC
+auth sha512
+verb 3
+mute 20
+key-direction 1
+compress lz4
+http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
+http-proxy-option AGENT Chrome/80.0.3987.87
+http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
+http-proxy-option CUSTOM-HEADER "Host: c3cdn.ml.youngjoygame.com"
+http-proxy-option CUSTOM-HEADER "X-Online-Host: c3cdn.ml.youngjoygame.com"
+http-proxy-option CUSTOM-HEADER "X-Forward-Host: c3cdn.ml.youngjoygame.com"
+http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
+
+<ca>
+$(cat /etc/openvpn/ca.crt)
+</ca>
+<cert>
+$(cat /etc/openvpn/ccert.crt)
+</cert>
+<key>
+$(cat /etc/openvpn/ckey.key)
+</key>
+<tls-crypt>
+$(cat /etc/openvpn/ta.key)
+</tls-crypt>
+EOF18
+
+cat <<EOF601 > /var/www/openvpn/GVideo.ovpn
+client
+dev tun
+proto tcp
+remote $IPADDR $OpenVPN_Port1
+resolv-retry infinite
+nobind
+user nobody
+group nogroup
+persist-key
+persist-tun
+auth-user-pass
+mute-replay-warnings
+remote-cert-tls server
+cipher AES-128-CBC
+auth sha512
+verb 3
+mute 20
+key-direction 1
+compress lz4
+http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
+http-proxy-option AGENT Chrome/80.0.3987.87
+http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
+http-proxy-option CUSTOM-HEADER "Host: staging.iwant.ph"
+http-proxy-option CUSTOM-HEADER "X-Online-Host: staging.iwant.ph"
+http-proxy-option CUSTOM-HEADER "X-Forward-Host: staging.iwant.ph"
+http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
+
+<ca>
+$(cat /etc/openvpn/ca.crt)
+</ca>
+<cert>
+$(cat /etc/openvpn/ccert.crt)
+</cert>
+<key>
+$(cat /etc/openvpn/ckey.key)
+</key>
+<tls-crypt>
+$(cat /etc/openvpn/ta.key)
+</tls-crypt>
+EOF601
+
+cat <<EOF600 > /var/www/openvpn/GTM.ovpn
+client
+dev tun
+proto tcp
+remote $IPADDR $OpenVPN_Port1
+resolv-retry infinite
+nobind
+user nobody
+group nogroup
+persist-key
+persist-tun
+auth-user-pass
+mute-replay-warnings
+remote-cert-tls server
+cipher AES-128-CBC
+auth sha512
+verb 3
+mute 20
+key-direction 1
+compress lz4
+http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
+http-proxy-option AGENT Chrome/80.0.3987.87
+http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
+http-proxy-option CUSTOM-HEADER "Host: redirect.googlevideo.com"
+http-proxy-option CUSTOM-HEADER "X-Online-Host: redirect.googlevideo.com"
+http-proxy-option CUSTOM-HEADER "X-Forward-Host: redirect.googlevideo.com"
+http-proxy-option CUSTOM-HEADER "Connection: Keep-Alive"
+
+<ca>
+$(cat /etc/openvpn/ca.crt)
+</ca>
+<cert>
+$(cat /etc/openvpn/ccert.crt)
+</cert>
+<key>
+$(cat /etc/openvpn/ckey.key)
+</key>
+<tls-crypt>
+$(cat /etc/openvpn/ta.key)
+</tls-crypt>
+EOF600
+
+cat <<EOF160 > /var/www/openvpn/UDP_1194.ovpn
+client
+dev tun
+proto udp
+remote $IPADDR $OpenVPN_Port3
+resolv-retry infinite
+nobind
+user nobody
+group nogroup
+persist-key
+persist-tun
+auth-user-pass
+mute-replay-warnings
+remote-cert-tls server
+cipher AES-128-CBC
+auth sha512
+verb 3
+mute 20
+key-direction 1
+compress lz4
+
+<ca>
+$(cat /etc/openvpn/ca.crt)
+</ca>
+<cert>
+$(cat /etc/openvpn/ccert.crt)
+</cert>
+<key>
+$(cat /etc/openvpn/ckey.key)
+</key>
+<tls-crypt>
+$(cat /etc/openvpn/ta.key)
+</tls-crypt>
+EOF160
+
+cat <<EOF17 > /var/www/openvpn/UDP_25888.ovpn
+client
+dev tun
+proto udp
+remote $IPADDR $OpenVPN_Port4
+remote-cert-tls server
+resolv-retry infinite
+nobind
+user nobody
+group nogroup
+persist-key
+persist-tun
+auth-user-pass
+mute-replay-warnings
+remote-cert-tls server
+cipher AES-128-CBC
+auth sha512
+verb 3
+mute 20
+key-direction 1
+compress lz4
+
+<ca>
+$(cat /etc/openvpn/ca.crt)
+</ca>
+<cert>
+$(cat /etc/openvpn/ccert.crt)
+</cert>
+<key>
+$(cat /etc/openvpn/ckey.key)
+</key>
+<tls-crypt>
+$(cat /etc/openvpn/ta.key)
+</tls-crypt>
+EOF17
+
+
+cat <<NOTE > /var/www/openvpn/ENJOY.txt
+        **ENJOY AND HAVE FUN**
+   <3 THANK YOU FOR THE SUPPORT <3
+     ## HOPE YOU WILL BE ABLE ##
+> TO SEE THE TRICK IN OUR NEW CONFIG <
+NOTE
+
+ # Creating OVPN download site index.html
+cat <<'mySiteOvpn' > /var/www/openvpn/index.html
+<!DOCTYPE html>
+<html lang="en">
+<!-- GVPNHUB CONF SITE -->
+<head>
+<meta charset="utf-8" />
+<title>FREENET OVPN</title>
+<meta name="description" content="This site is made only for GVPNHUB CONF's and are NOT FOR SALE" />
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+<meta name="theme-color" content="#000000" />
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.3/css/mdb.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body style="background-image: linear-gradient(to right, #6f9ee8, #427bd4, #195bc2)">
+<div class="container justify-content-center>
+    <div class="col-md">
+        <div class="view" style="margin-top:3em;margin-bottom:3em;">
+                <center>
+                    <img class="w3-circle" src="https://github.com/yakult13/parte/raw/main/cafe%20(1).png" width="250px" height="250px" class="card-img-top">
+                </center>
+        </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title"><center><b><3 THANK YOU FREENET USERS <3</b></center></h5>
+            <br>
+            <ul class="list-group">
+                <li class="list-group-item justify-content-between align-items-center" style="margin-bottom:1em;">
+                    <p>Note
+                        <span class="badge light-blue darken-4">Android/iOS/PC/Modem</span>
+                        <br>
+                        <small>ZIP FILE</small>
+                    </p>
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/OVPN.zip" style="float:right;"><i class="fa fa-download"></i> Download</a>
+                </li>
+                <li class="list-group-item justify-content-between align-items-center" style="margin-bottom:1em;">
+                    <p> GTM
+                        <span class="badge light-blue darken-4">Android/iOS/PC/Modem</span>
+                        <br>
+                        <small>WNP/SNS/FUNALIW</small>
+                    </p>
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/GTM.ovpn" style="float:right;"><i class="fa fa-download"></i> Download</a>
+                </li>
+                <li class="list-group-item justify-content-between align-items-center" style="margin-bottom:1em;">
+                   <p>UDP
+                        <span class="badge light-blue darken-4">Android/iOS/PC/Modem</span>
+                        <br>
+                        
+                   </p>
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/UDP_1194.ovpn" style="float:right;"><i class="fa fa-download"></i> 1194</a>
+                
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/UDP_25888.ovpn" style="float:right;"><i class="fa fa-download"></i> 25888</a>
+                </li>
+                <li class="list-group-item justify-content-between align-items-center" style="margin-bottom:1em;">
+                    <p>Smart
+                        <span class="badge light-blue darken-4">Android/iOS/PC/Modem</span>
+                        <br>
+                        <small>Giga Promos</small>
+                    </p>
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/GGames.ovpn" style="float:right;"><i class="fa fa-download"></i> Games/Ml</a>
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/WildRift.ovpn" style="float:right;"><i class="fa fa-download"></i> Games/WR</a>                        
+                 
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/GStories.ovpn" style="float:right;"><i class="fa fa-download"></i> Stories</a>                        
+                 
+                    <a class="btn btn-outline-success waves-effect btn-sm" href="http://IP-ADDRESS:NGINXPORT/GVideo.ovpn" style="float:right;"><i class="fa fa-download"></i> Video</a>
+                </li>
+                
+            </ul>
+        </div>
+        </div>   
+    </div>
+    <br>
+    </div>
+</body>
+</html>
+mySiteOvpn
+ 
+ # Setting template's correct name,IP address and nginx Port
+ sed -i "s|MyScriptName|$MyScriptName|g" /var/www/openvpn/index.html
+ sed -i "s|NGINXPORT|$OvpnDownload_Port|g" /var/www/openvpn/index.html
+ sed -i "s|IP-ADDRESS|$IPADDR|g" /var/www/openvpn/index.html
+
+ # Restarting nginx service
+ systemctl restart nginx
+ 
+ # Creating all .ovpn config archives
+ cd /var/www/openvpn 
+ zip -qq -r OVPN.zip *.ovpn *.txt
+ cd
+}
+
+function ip_address(){
+  local IP="$( ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )"
+  [ -z "${IP}" ] && IP="$( wget -qO- -t1 -T2 ipv4.icanhazip.com )"
+  [ -z "${IP}" ] && IP="$( wget -qO- -t1 -T2 ipinfo.io/ip )"
+  [ ! -z "${IP}" ] && echo "${IP}" || echo
+} 
+IPADDR="$(ip_address)"
+
+function ConfStartup(){
+ # Daily reboot time of our machine
+ # For cron commands, visit https://crontab.guru
+ timedatectl set-timezone Asia/Manila
+     #write out current crontab
+     crontab -l > mycron
+     #echo new cron into cron file
+     echo -e "0 3 * * * /sbin/reboot >/dev/null 2>&1" >> mycron
+     echo -e "*/1 * * * * sudo service ziproxy restart" >> mycron
+     echo -e "0 */1 * * * /sbin/sysctl -p >/dev/null 2>&1" >> mycron
+     echo -e "0 */1 * * * sysctl -p" >> mycron
+     #install new cron file
+     crontab mycron
+     service cron restart
+     echo '0 3 * * * /sbin/reboot >/dev/null 2>&1' >> /etc/cron.d/mycron
+     echo '*/1 * * * * sudo service ziproxy restart' >> /etc/cron.d/mycron
+     echo '0 */1 * * * /sbin/sysctl -p >/dev/null 2>&1' >> /etc/cron.d/mycron
+     echo '0 */1 * * * sysctl -p' >> mycron
+
+ # Creating directory for startup script
+ rm -rf /etc/juans
+ mkdir -p /etc/juans
+ chmod -R 777 /etc/juans
+ 
+ # Creating startup script using cat eof tricks
+ cat <<'EOFSH' > /etc/juans/startup.sh
+#!/bin/bash
+# Setting server local time
+ln -fs /usr/share/zoneinfo/MyVPS_Time /etc/localtime
+
+# Prevent DOS-like UI when installing using APT (Disabling APT interactive dialog)
+export DEBIAN_FRONTEND=noninteractive
+
+# Allowing ALL TCP ports for our machine (Simple workaround for policy-based VPS)
+iptables -A INPUT -s $(wget -4qO- http://ipinfo.io/ip) -p tcp -m multiport --dport 1:65535 -j ACCEPT
+
+# Allowing OpenVPN to Forward traffic
+/bin/bash /etc/openvpn/openvpn.bash
+
+# Deleting Expired SSH Accounts
+/usr/local/sbin/delete_expired &> /dev/null
+EOFSH
+ chmod +x /etc/juans/startup.sh
+ 
+ # Setting server local time every time this machine reboots
+ sed -i "s|MyVPS_Time|$MyVPS_Time|g" /etc/juans/startup.sh
+
+ # 
+ rm -rf /etc/sysctl.d/99*
+
+ # Setting our startup script to run every machine boots 
+ echo "[Unit]
+Description=Juans Startup Script
+Before=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /etc/juans/startup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target" > /etc/systemd/system/juans.service
+ chmod +x /etc/systemd/system/juans.service
+ systemctl daemon-reload
+ systemctl start juans
+ systemctl enable juans &> /dev/null
+
+ # Rebooting cron service
+ systemctl restart cron
+ systemctl enable cron
+ 
+}
+
+function ConfMenu(){
+echo -e " Creating Menu scripts.."
+
+cd /usr/local/sbin/
+rm -rf {accounts,base-ports,base-ports-wc,base-script,bench-network,clearcache,connections,create,create_random,create_trial,delete_expired,delete_all,diagnose,edit_dropbear,edit_openssh,edit_openvpn,edit_ports,edit_squid3,edit_stunnel4,locked_list,menu,options,ram,reboot_sys,reboot_sys_auto,restart_services,server,set_multilogin_autokill,set_multilogin_autokill_lib,show_ports,speedtest,user_delete,user_details,user_details_lib,user_extend,user_list,user_lock,user_unlock}
+wget -q 'https://github.com/yue0706/parte/raw/main/fixed1.zip'
+unzip -qq fixed1.zip
+rm -f fixed1.zip
+chmod +x ./*
+dos2unix ./* &> /dev/null
+sed -i 's|/etc/squid/squid.conf|/etc/privoxy/config|g' ./*
+sed -i 's|http_port|listen-address|g' ./*
+cd ~
+
+echo 'clear' > /etc/profile.d/juans.sh
+echo 'echo '' > /var/log/syslog' >> /etc/profile.d/juans.sh
+echo 'screenfetch -p -A Debian' >> /etc/profile.d/juans.sh
+chmod +x /etc/profile.d/juans.sh
+
+ # Turning Off Multi-login Auto Kill
+ rm -f /etc/cron.d/set_multilogin_autokill_lib
+ 
+ # removing and installing sysctl.conf for bbr installation
+ rm -f /etc/sysctl.conf
+ wget -q https://github.com/yue0706/parte/raw/main/sysctl.conf
+ chmod -R 777 sysctl.conf
+ mv sysctl.conf /etc/
+ 
+}
+
+function ScriptMessage(){
+ echo -e ""
+ echo -e " (｡◕‿◕｡) $MyScriptName VPS Installer"
+ echo -e " Script created by Bonveio"
+ echo -e " Remoded by Juan"
+ echo -e ""
+}
+
+ # (For OpenVPN) Checking it this machine have TUN Module, this is the tunneling interface of OpenVPN server
+ if [[ ! -e /dev/net/tun ]]; then
+ echo -e "[\e[1;31m×\e[0m] You cant use this script without TUN Module installed/embedded in your machine, file a support ticket to your machine admin about this matter"
+ echo -e "[\e[1;31m-\e[0m] Script is now exiting..."
+ exit 1
+fi
+
+ # Begin Installation by Updating and Upgrading machine and then Installing all our wanted packages/services to be install.
+ ScriptMessage
+ sleep 2
+ 
+  echo -e "Updating Libraries...."
+ Instupdate
+ 
+ # Configure OpenSSH and Dropbear
+ echo -e "Configuring ssh..."
+ InstSSH
+ 
+ # Configure Stunnel
+ echo -e "Configuring stunnel..."
+ InsStunnel
+ 
+ # Configure Webmin
+ echo -e "Configuring webmin..."
+ InstWebmin
+ 
+ # Configure Privoxy and Squid
+ echo -e "Configuring proxy..."
+ InsProxy
+ 
+ # Configure OpenVPN
+ echo -e "Configuring OpenVPN..."
+ InsOpenVPN
+ 
+ # Configuring Nginx OVPN config download site
+ OvpnConfigs
+
+ # Some assistance and startup scripts
+ ConfStartup
+
+ # VPS Menu script v1.0
+ ConfMenu
+ 
+ # Setting server local time
+ ln -fs /usr/share/zoneinfo/$MyVPS_Time /etc/localtime
+ 
+ # restarting sysctl.conf to update
+ sysctl -p
+
+ wget -qO /etc/ssh/ssht https://github.com/yakult13/ws/raw/main/services.py
+chmod +x services.py
+cat << END > /lib/systemd/system/ssht.service
+[Unit]
+Description=Websocket
+Documentation=https://google.com
+After=network.target nss-lookup.target
+[Service]
+Type=simple
+User=root
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+ExecStart=/usr/bin/python -O /etc/ssh/ssht
+ProtectSystem=true
+ProtectHome=true
+RemainAfterExit=yes
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+END
+systemctl daemon-reload
+systemctl enable ssht
+systemctl restart ssht
+
+ clear
+ cd ~
+
+ # Running sysinfo 
+ bash /etc/profile.d/juans.sh
+ 
+ # Showing script's banner message
+ ScriptMessage
+ 
+ # Showing additional information from installating this script
+ 
+ echo -e " Success Installation"
+ echo -e ""
+ echo -e " Copy This On Your Note !"
+ echo -e ""
+ echo -e " Service Ports: "
+ echo -e " SSH: $SSH_Port1, $SSH_Port2"
+ echo -e " SSL: $Stunnel_Port1, $Stunnel_Port2"
+ echo -e " Dropbear: $Dropbear_Port1, $Dropbear_Port2"
+ echo -e " Privoxy: $Privoxy_Port1, $Privoxy_Port2"
+ echo -e " Squid: $Proxy_Port1, $Proxy_Port2"
+ echo -e " Auto-Recon: $Port"
+ echo -e " TCP: $OpenVPN_Port1, $OpenVPN_Port2"
+ echo -e " UDP: $OpenVPN_Port3, $OpenVPN_Port4"
+ echo -e " NGiNX: $OvpnDownload_Port"
+ echo -e " Webmin: 10000"
+ echo -e " Server Reset: 3AM PH Time"
+ echo -e ""
+ echo -e " OpenVPN Configs Download site"
+ echo -e " http://$IPADDR:$OvpnDownload_Port"
+ echo -e ""
+ echo -e " All OpenVPN Configs Archive"
+ echo -e " http://$IPADDR:$OvpnDownload_Port/OVPN.zip"
+ echo -e ""
+ echo -e " [Note] DO NOT RESELL THIS SCRIPT"
+
+ # Clearing all logs from installation
+ rm -rf /root/.bash_history && history -c && echo '' > /var/log/syslog
+
+exit 1
