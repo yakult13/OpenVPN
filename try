@@ -214,7 +214,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-128-CBC
+cipher AES-256-GCM
 auth SHA512
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -249,7 +249,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-128-CBC
+cipher AES-256-GCM
 auth SHA512
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -284,7 +284,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-128-CBC
+cipher AES-256-GCM
 auth SHA512
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -319,7 +319,7 @@ log /etc/openvpn/openvpn.log
 verb 3
 mute 20
 explicit-exit-notify 0
-cipher AES-128-CBC
+cipher AES-256-GCM
 auth SHA512
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
@@ -703,7 +703,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-auth SHA512
+auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
@@ -751,7 +751,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-auth SHA512
+auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
@@ -800,7 +800,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-auth SHA512
+auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
@@ -849,7 +849,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-auth SHA512
+auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
@@ -898,7 +898,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-auth SHA512
+auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
@@ -947,7 +947,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-auth SHA512
+auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
@@ -989,7 +989,7 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-auth SHA512
+auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
