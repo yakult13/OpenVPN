@@ -198,7 +198,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 172.18.0.0 255.255.0.0
+server 10.8.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -233,7 +233,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 172.19.0.0 255.255.0.0
+server 10.9.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -268,7 +268,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 172.20.0.0 255.255.0.0
+server 10.10.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -303,7 +303,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 172.21.0.0 255.255.0.0
+server 10.11.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -332,18 +332,19 @@ VPN4
 
  cat <<'CERT'> /etc/openvpn/ca.crt
 -----BEGIN CERTIFICATE-----
-MIICEjCCAZmgAwIBAgIUARL1xhYZpYJnqkO3aw4xun7tZsswCQYHKoZIzj0EATAe
-MRwwGgYDVQQDDBNGcmVlbmV0IENhZmUgU2VydmVyMB4XDTIyMDMxOTA4MDIyN1oX
-DTMyMDMxNjA4MDIyN1owHjEcMBoGA1UEAwwTRnJlZW5ldCBDYWZlIFNlcnZlcjB2
-MBAGByqGSM49AgEGBSuBBAAiA2IABAgoApMCyKzf9nRu0yVOjVRn29Nky7kFht6F
-qzkHQN8ijC4wAByvSAdezKpTavZTwtf5dfIHkSJGj2CeyWfzvZhOrY3GDeFRqXjT
-5xiD/GhvXQ6QQbqeXU6XDfg7S1krXaOBmDCBlTAdBgNVHQ4EFgQUFUzyLjHZLjCs
-sMfqKnUvKlsFoR8wWQYDVR0jBFIwUIAUFUzyLjHZLjCssMfqKnUvKlsFoR+hIqQg
-MB4xHDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAES9cYWGaWCZ6pDt2sO
-Mbp+7WbLMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgEGMAkGByqGSM49BAEDaAAw
-ZQIwe+Fx4E5OAzvN30Yw6WDygOcMaWLe07eLf3xBxJVJwY+eYqBlezxpja4olwv8
-EqdyAjEA2jgFYmmfOmxNFiJJq+juTtp0F9fNZJJpYk7JAZYoFDrxp8qxc4KACJTq
-xpgiir/L
+MIICXzCCAcCgAwIBAgIUAhVjNpIlMSD6zZ9icYRMDUiAV/QwCgYIKoZIzj0EAwQw
+HjEcMBoGA1UEAwwTRnJlZW5ldCBDYWZlIFNlcnZlcjAeFw0yMjAzMTkwOTAxMTBa
+Fw0zMjAzMTYwOTAxMTBaMB4xHDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXIw
+gZswEAYHKoZIzj0CAQYFK4EEACMDgYYABADSH5cnJUIHwfv3/tzXytCT8/Q8OTuq
+lY1KRC5t64B6imXbSH1ucmh+k/tyVYeoC2qWeXHYkgcehoWJgaMFjIZdFQCdnlIF
+tpi5GmQ7WMkFGZ59R2iM4zEBz+I3uBbRle1awZ8O92+ede7CpzsFEgy7uLzcjD2Z
+UtbjvPCOooksML7qF6OBmDCBlTAdBgNVHQ4EFgQUHC45UEAhO6mDXj55d8matmL+
+BnMwWQYDVR0jBFIwUIAUHC45UEAhO6mDXj55d8matmL+BnOhIqQgMB4xHDAaBgNV
+BAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAIVYzaSJTEg+s2fYnGETA1IgFf0MAwG
+A1UdEwQFMAMBAf8wCwYDVR0PBAQDAgEGMAoGCCqGSM49BAMEA4GMADCBiAJCAJCd
+/X0m7AmCm6WGzSAuaX+qjy1NexWbB8FXKbyDnDjARB4tQTaJYcaRgyonWYHF6o0c
+6jz2Kj5Q7+xsCCdp4t+5AkIA0rwJN+Sxg7ZK4FgVA5NvUTsUY0r0edNzmchSup6v
+84RS+cESTFYL3jWZ6bDu1/Q7KrGQcA5oZ4nLIaljP1zj2Rw=
 -----END CERTIFICATE-----
 CERT
 
@@ -352,35 +353,37 @@ Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number:
-            2a:ee:e4:76:8e:2c:a9:07:e1:d9:5e:d2:31:4a:24:fd
-        Signature Algorithm: ecdsa-with-SHA1
+            d8:a0:cc:2d:12:14:57:56:4e:0f:b8:3b:66:44:8d:a0
+        Signature Algorithm: ecdsa-with-SHA512
         Issuer: CN=Freenet Cafe Server
         Validity
-            Not Before: Mar 19 08:04:24 2022 GMT
-            Not After : Mar 16 08:04:24 2032 GMT
+            Not Before: Mar 19 09:03:51 2022 GMT
+            Not After : Mar 14 09:03:51 2023 GMT
         Subject: CN=Freenet Cafe
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
-                Public-Key: (384 bit)
+                Public-Key: (521 bit)
                 pub:
-                    04:1d:0b:07:58:bc:78:2d:d8:b5:d9:c2:14:46:d2:
-                    a8:ef:d4:d8:fb:35:02:8f:d8:e5:7b:6a:16:ec:22:
-                    53:b9:ee:d8:0a:69:d5:f3:c1:ef:f8:5f:ac:63:88:
-                    70:8b:4f:c1:f5:22:f0:63:dc:fa:4a:8b:b2:31:08:
-                    ed:64:c0:b4:68:ad:a3:1b:4e:b0:51:ae:75:db:51:
-                    8b:f2:f3:33:f7:61:71:6e:b0:1d:b3:20:87:b5:d7:
-                    61:15:08:8c:fb:91:c9
-                ASN1 OID: secp384r1
-                NIST CURVE: P-384
+                    04:00:0e:53:c9:95:0b:2b:9a:55:19:ac:63:bb:97:
+                    42:16:c6:6f:15:cc:86:41:08:27:73:2a:70:d5:67:
+                    f3:a5:00:73:ef:ba:7c:b8:7d:26:63:82:59:24:84:
+                    e8:bf:51:d5:9a:65:ff:6b:da:5e:4c:b7:fd:47:95:
+                    b5:74:ed:4f:af:4b:c8:00:80:1f:ba:57:c4:ff:29:
+                    e6:29:87:ff:05:93:3e:34:b3:ec:0e:7d:f7:4a:9f:
+                    5e:a5:d8:90:20:b6:ac:9e:6c:ba:bb:59:14:42:fb:
+                    e3:0b:70:d1:55:bd:50:bd:66:9e:9a:06:8e:c6:53:
+                    2f:fb:47:ae:9d:e1:f3:41:d3:30:83:ce:a4
+                ASN1 OID: secp521r1
+                NIST CURVE: P-521
         X509v3 extensions:
             X509v3 Basic Constraints: 
                 CA:FALSE
             X509v3 Subject Key Identifier: 
-                28:01:36:08:EB:C7:22:F0:06:12:93:D6:CD:C7:E7:A0:8E:0B:11:CA
+                B1:5E:A0:4F:5B:4B:8E:51:AE:CB:69:40:5C:F3:DC:FF:D8:69:DE:82
             X509v3 Authority Key Identifier: 
-                keyid:15:4C:F2:2E:31:D9:2E:30:AC:B0:C7:EA:2A:75:2F:2A:5B:05:A1:1F
+                keyid:1C:2E:39:50:40:21:3B:A9:83:5E:3E:79:77:C9:9A:B6:62:FE:06:73
                 DirName:/CN=Freenet Cafe Server
-                serial:01:12:F5:C6:16:19:A5:82:67:AA:43:B7:6B:0E:31:BA:7E:ED:66:CB
+                serial:02:15:63:36:92:25:31:20:FA:CD:9F:62:71:84:4C:0D:48:80:57:F4
 
             X509v3 Extended Key Usage: 
                 TLS Web Server Authentication
@@ -388,35 +391,41 @@ Certificate:
                 Digital Signature, Key Encipherment
             X509v3 Subject Alternative Name: 
                 DNS:Freenet Cafe
-    Signature Algorithm: ecdsa-with-SHA1
-         30:65:02:30:39:8a:6a:1a:c5:d5:7c:f9:80:48:23:02:3e:29:
-         4f:5d:04:d4:31:bf:fa:a0:ed:be:2e:e7:9b:df:64:81:ef:e2:
-         26:9a:c0:37:81:b1:43:2d:a8:25:b3:da:bf:31:ea:87:02:31:
-         00:f6:04:7e:ef:cf:6d:04:47:39:6d:eb:65:58:4c:55:33:55:
-         99:76:c6:79:98:61:e4:e7:fa:57:67:d8:ab:2d:00:74:13:6e:
-         75:f1:58:0a:c2:fd:8d:e0:72:4d:6c:ca:13
+    Signature Algorithm: ecdsa-with-SHA512
+         30:81:88:02:42:00:8f:a9:13:17:ad:07:3c:55:e2:65:96:88:
+         13:33:fc:34:62:86:f4:3d:c1:e5:99:50:bf:11:8c:38:0d:87:
+         49:15:fc:e7:7d:4b:76:25:20:9c:97:0a:80:47:18:d4:42:73:
+         0e:5b:28:bf:27:23:56:75:74:13:de:ce:5a:08:f5:8e:cd:02:
+         42:00:a8:35:37:b1:8a:9e:aa:80:90:88:f4:6f:4c:bc:f8:e6:
+         87:12:5a:4f:18:74:04:c2:81:8b:b9:2a:40:b4:fb:b9:a9:f7:
+         38:fe:7b:8c:73:20:29:9c:92:76:d7:d7:f7:cd:98:bc:d5:29:
+         f8:01:4c:b8:23:25:71:bd:a9:1d:cb:7a:62
 -----BEGIN CERTIFICATE-----
-MIICMjCCAbmgAwIBAgIQKu7kdo4sqQfh2V7SMUok/TAJBgcqhkjOPQQBMB4xHDAa
-BgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXIwHhcNMjIwMzE5MDgwNDI0WhcNMzIw
-MzE2MDgwNDI0WjAXMRUwEwYDVQQDDAxGcmVlbmV0IENhZmUwdjAQBgcqhkjOPQIB
-BgUrgQQAIgNiAAQdCwdYvHgt2LXZwhRG0qjv1Nj7NQKP2OV7ahbsIlO57tgKadXz
-we/4X6xjiHCLT8H1IvBj3PpKi7IxCO1kwLRoraMbTrBRrnXbUYvy8zP3YXFusB2z
-IIe112EVCIz7kcmjgcMwgcAwCQYDVR0TBAIwADAdBgNVHQ4EFgQUKAE2COvHIvAG
-EpPWzcfnoI4LEcowWQYDVR0jBFIwUIAUFUzyLjHZLjCssMfqKnUvKlsFoR+hIqQg
-MB4xHDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAES9cYWGaWCZ6pDt2sO
-Mbp+7WbLMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAsGA1UdDwQEAwIFoDAXBgNVHREE
-EDAOggxGcmVlbmV0IENhZmUwCQYHKoZIzj0EAQNoADBlAjA5imoaxdV8+YBIIwI+
-KU9dBNQxv/qg7b4u55vfZIHv4iaawDeBsUMtqCWz2r8x6ocCMQD2BH7vz20ERzlt
-62VYTFUzVZl2xnmYYeTn+ldn2KstAHQTbnXxWArC/Y3gck1syhM=
+MIICgDCCAeGgAwIBAgIRANigzC0SFFdWTg+4O2ZEjaAwCgYIKoZIzj0EAwQwHjEc
+MBoGA1UEAwwTRnJlZW5ldCBDYWZlIFNlcnZlcjAeFw0yMjAzMTkwOTAzNTFaFw0y
+MzAzMTQwOTAzNTFaMBcxFTATBgNVBAMMDEZyZWVuZXQgQ2FmZTCBmzAQBgcqhkjO
+PQIBBgUrgQQAIwOBhgAEAA5TyZULK5pVGaxju5dCFsZvFcyGQQgncypw1WfzpQBz
+77p8uH0mY4JZJITov1HVmmX/a9peTLf9R5W1dO1Pr0vIAIAfulfE/ynmKYf/BZM+
+NLPsDn33Sp9epdiQILasnmy6u1kUQvvjC3DRVb1QvWaemgaOxlMv+0euneHzQdMw
+g86ko4HDMIHAMAkGA1UdEwQCMAAwHQYDVR0OBBYEFLFeoE9bS45RrstpQFzz3P/Y
+ad6CMFkGA1UdIwRSMFCAFBwuOVBAITupg14+eXfJmrZi/gZzoSKkIDAeMRwwGgYD
+VQQDDBNGcmVlbmV0IENhZmUgU2VydmVyghQCFWM2kiUxIPrNn2JxhEwNSIBX9DAT
+BgNVHSUEDDAKBggrBgEFBQcDATALBgNVHQ8EBAMCBaAwFwYDVR0RBBAwDoIMRnJl
+ZW5ldCBDYWZlMAoGCCqGSM49BAMEA4GMADCBiAJCAI+pExetBzxV4mWWiBMz/DRi
+hvQ9weWZUL8RjDgNh0kV/Od9S3YlIJyXCoBHGNRCcw5bKL8nI1Z1dBPezloI9Y7N
+AkIAqDU3sYqeqoCQiPRvTLz45ocSWk8YdATCgYu5KkC0+7mp9zj+e4xzICmcknbX
+1/fNmLzVKfgBTLgjJXG9qR3LemI=
 -----END CERTIFICATE-----
 SCERT
 
  cat <<'SKEY' > /etc/openvpn/server.key
 -----BEGIN PRIVATE KEY-----
-MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDDfGj6AN32hLYHR966L
-dWjiUM5V7fY2MOmYA/gMSMzNm1JG8dc/SfKV2sfqlUGAbaGhZANiAAQdCwdYvHgt
-2LXZwhRG0qjv1Nj7NQKP2OV7ahbsIlO57tgKadXzwe/4X6xjiHCLT8H1IvBj3PpK
-i7IxCO1kwLRoraMbTrBRrnXbUYvy8zP3YXFusB2zIIe112EVCIz7kck=
+MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIBeAo4xcscw2HvhYTH
+976zj8r813N6eq2vx6QUnz2WTwu4jPzSNH5IeXqgaQX2rwTlR3LhiPcfXm/pYzhH
+tndbxHOhgYkDgYYABAAOU8mVCyuaVRmsY7uXQhbGbxXMhkEIJ3MqcNVn86UAc++6
+fLh9JmOCWSSE6L9R1Zpl/2vaXky3/UeVtXTtT69LyACAH7pXxP8p5imH/wWTPjSz
+7A5990qfXqXYkCC2rJ5surtZFEL74wtw0VW9UL1mnpoGjsZTL/tHrp3h80HTMIPO
+pA==
 -----END PRIVATE KEY-----
 SKEY
 
@@ -425,31 +434,33 @@ cat <<'TAK' > /etc/openvpn/ta.key
 # 2048 bit OpenVPN static key
 #
 -----BEGIN OpenVPN Static key V1-----
-348eb8f02e5af85ddf0bd4cd60f039b7
-08ab88f79505b2d5b2d02b28042fb457
-7382e6205dd61be8cc15672690d958bd
-c9834ffe546dfcf7b06e409c9fb8cf14
-db35f7e300e6fedd829f4ec6b60c3e9f
-02f7edaec401a5ae3a1c48e2e7efbfc0
-71322e8827072210c43476b403a312ca
-b0fd9cd27e748ec25876aa3efaf0bb70
-0aeda3353e1bf55141f0fe70592dd6b2
-dac610d9ab0d5f00d54a6d727d904a5f
-c5746038e6b7ee6434a56d3db4886e07
-f633893fd82cbca114d84bae548b8fdf
-ca8ecb557b75319c67220e035a60230d
-cb1c22e8d2246631455b234e41c1c34a
-52d119121cbe0a36005125644cc462d1
-e21d5897fa049f5839c842d146a84026
+d6745f1377e9c1f27a42432c46f25b67
+b454b05f7e26b3f8d1ab5c6fd65120d9
+3b9092d95386cc1b70a9b5c5fc40267b
+61e25823c7db50ea8dcab8932d2b9487
+15d3c32899aaec24314cef66435b5b47
+3c12a3326b06e608f739fdc32b21b383
+877a0c348836a88011cc22586bb4b1e6
+4acb1cfb43fbbe5fbe5d3b6b648a7281
+58ed68ba7f890f202b252a23c6042636
+7af5f1b8a90eb8172930d9ce9957bef6
+2bbd209819cd7fb342ffe2adc795dc73
+975ae620ed42851c76d47203f79ffabd
+fea861525e64d6a27cc0075a9790b653
+e73976cc226614e0c0ebb199ac8e5a36
+ba188f07899af6c385c7275fc78e5e08
+84abc61687cba10e520d1dfb5a21cf73
 -----END OpenVPN Static key V1-----
 TAK
 
 cat <<'clientkey' > /etc/openvpn/ckey.key
 -----BEGIN PRIVATE KEY-----
-MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDDb27O7IrLPr+mTRt89
-QyqWrNOlMmwBNnKeIYVSqWldPSQtBKUcaSYzwd6EQt7yl9qhZANiAAQrvOU/as1I
-rK/v9wbDNliwegWrLXyCrhoWWvhoiFtMXSqm+RXEJhlxEilK76JN27dzJ35asv4m
-y9s6FVgrgRYGm9T8dnP7fUVVkpV0LElmTwLerf1hU2eH64oMFfFcZ9c=
+MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIBMyAg1dNTBftH+jhX
+SGE8GTg/uwNHYrn0NOL/lq/HB+rQ+Zy5MVej9/q9HNSMWtW18QTtLFLwnvPX8RRe
+uWwkn6qhgYkDgYYABAE1hjHOCU2/LK3eI6nau8eEfQocZ6PgmABvkg1XJijoo2LX
++sYZreluDUYHwxzvBewhLINOVAux3zGEAkq9IzLORwAmjscSmRm/Ydpuf62Txne1
+NbTjon7v4q/UaAp6LQvRw2MWfDUu7p/JllIr84ddc4O0dffpqldzwNWZl38f3NLA
+oQ==
 -----END PRIVATE KEY-----
 clientkey
 
@@ -458,60 +469,65 @@ Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number:
-            b1:f4:ce:bc:13:ce:b3:47:fe:e0:bc:5a:c5:d9:b7:99
-        Signature Algorithm: ecdsa-with-SHA1
+            b5:3f:e2:93:b5:e5:13:ca:d8:bd:90:81:91:18:41:67
+        Signature Algorithm: ecdsa-with-SHA512
         Issuer: CN=Freenet Cafe Server
         Validity
-            Not Before: Mar 19 08:07:27 2022 GMT
-            Not After : Mar 16 08:07:27 2032 GMT
+            Not Before: Mar 19 09:07:12 2022 GMT
+            Not After : Mar 14 09:07:12 2023 GMT
         Subject: CN=Freenet Cafe User
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
-                Public-Key: (384 bit)
+                Public-Key: (521 bit)
                 pub:
-                    04:2b:bc:e5:3f:6a:cd:48:ac:af:ef:f7:06:c3:36:
-                    58:b0:7a:05:ab:2d:7c:82:ae:1a:16:5a:f8:68:88:
-                    5b:4c:5d:2a:a6:f9:15:c4:26:19:71:12:29:4a:ef:
-                    a2:4d:db:b7:73:27:7e:5a:b2:fe:26:cb:db:3a:15:
-                    58:2b:81:16:06:9b:d4:fc:76:73:fb:7d:45:55:92:
-                    95:74:2c:49:66:4f:02:de:ad:fd:61:53:67:87:eb:
-                    8a:0c:15:f1:5c:67:d7
-                ASN1 OID: secp384r1
-                NIST CURVE: P-384
+                    04:01:35:86:31:ce:09:4d:bf:2c:ad:de:23:a9:da:
+                    bb:c7:84:7d:0a:1c:67:a3:e0:98:00:6f:92:0d:57:
+                    26:28:e8:a3:62:d7:fa:c6:19:ad:e9:6e:0d:46:07:
+                    c3:1c:ef:05:ec:21:2c:83:4e:54:0b:b1:df:31:84:
+                    02:4a:bd:23:32:ce:47:00:26:8e:c7:12:99:19:bf:
+                    61:da:6e:7f:ad:93:c6:77:b5:35:b4:e3:a2:7e:ef:
+                    e2:af:d4:68:0a:7a:2d:0b:d1:c3:63:16:7c:35:2e:
+                    ee:9f:c9:96:52:2b:f3:87:5d:73:83:b4:75:f7:e9:
+                    aa:57:73:c0:d5:99:97:7f:1f:dc:d2:c0:a1
+                ASN1 OID: secp521r1
+                NIST CURVE: P-521
         X509v3 extensions:
             X509v3 Basic Constraints: 
                 CA:FALSE
             X509v3 Subject Key Identifier: 
-                4B:A5:D5:BE:5E:BC:4B:E7:EB:DA:EE:A4:88:C6:19:A3:6D:DE:95:F0
+                75:72:7D:72:EA:22:B7:F8:41:35:65:34:FF:30:5F:64:1C:07:E9:8A
             X509v3 Authority Key Identifier: 
-                keyid:15:4C:F2:2E:31:D9:2E:30:AC:B0:C7:EA:2A:75:2F:2A:5B:05:A1:1F
+                keyid:1C:2E:39:50:40:21:3B:A9:83:5E:3E:79:77:C9:9A:B6:62:FE:06:73
                 DirName:/CN=Freenet Cafe Server
-                serial:01:12:F5:C6:16:19:A5:82:67:AA:43:B7:6B:0E:31:BA:7E:ED:66:CB
+                serial:02:15:63:36:92:25:31:20:FA:CD:9F:62:71:84:4C:0D:48:80:57:F4
 
             X509v3 Extended Key Usage: 
                 TLS Web Client Authentication
             X509v3 Key Usage: 
                 Digital Signature
-    Signature Algorithm: ecdsa-with-SHA1
-         30:64:02:30:0b:0d:9b:78:64:68:ab:98:25:5d:a6:de:c0:58:
-         16:06:58:24:c1:01:53:f4:24:a3:1d:1f:9d:ca:c6:3e:78:c3:
-         1d:df:8c:ac:9c:50:e9:a6:0f:a7:eb:93:36:df:61:76:02:30:
-         3f:cd:8f:a8:ad:94:74:54:26:50:f3:8b:c3:a8:e9:8a:f3:51:
-         aa:8f:95:45:5b:ee:4b:8a:91:53:7a:b1:57:ed:75:7b:f3:a9:
-         ed:34:ae:3b:0d:e8:49:4f:ee:50:61:7e
+    Signature Algorithm: ecdsa-with-SHA512
+         30:81:87:02:41:66:fe:cc:c3:40:72:a9:22:c7:21:f1:76:de:
+         85:98:49:59:5c:fe:87:1e:86:a6:10:9c:df:a3:bb:8e:c3:10:
+         19:99:8a:e0:c8:ed:58:0a:30:32:d6:54:2a:73:17:bc:3a:89:
+         2d:ae:58:2c:4e:5d:73:be:8e:d8:ec:1a:a5:57:fa:19:02:42:
+         01:ac:1b:d2:e0:86:6d:97:dc:32:2d:ab:02:61:54:18:5d:bf:
+         d6:c3:8e:d6:c5:ff:06:1f:96:97:43:ae:13:5a:b6:54:5d:8f:
+         f1:b3:3a:a3:90:90:64:85:0a:ae:f0:2c:08:5e:e3:63:cc:96:
+         09:40:8f:70:90:43:a4:a6:77:c3:ad:81
 -----BEGIN CERTIFICATE-----
-MIICHjCCAaagAwIBAgIRALH0zrwTzrNH/uC8WsXZt5kwCQYHKoZIzj0EATAeMRww
-GgYDVQQDDBNGcmVlbmV0IENhZmUgU2VydmVyMB4XDTIyMDMxOTA4MDcyN1oXDTMy
-MDMxNjA4MDcyN1owHDEaMBgGA1UEAwwRRnJlZW5ldCBDYWZlIFVzZXIwdjAQBgcq
-hkjOPQIBBgUrgQQAIgNiAAQrvOU/as1IrK/v9wbDNliwegWrLXyCrhoWWvhoiFtM
-XSqm+RXEJhlxEilK76JN27dzJ35asv4my9s6FVgrgRYGm9T8dnP7fUVVkpV0LElm
-TwLerf1hU2eH64oMFfFcZ9ejgaowgacwCQYDVR0TBAIwADAdBgNVHQ4EFgQUS6XV
-vl68S+fr2u6kiMYZo23elfAwWQYDVR0jBFIwUIAUFUzyLjHZLjCssMfqKnUvKlsF
-oR+hIqQgMB4xHDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAES9cYWGaWC
-Z6pDt2sOMbp+7WbLMBMGA1UdJQQMMAoGCCsGAQUFBwMCMAsGA1UdDwQEAwIHgDAJ
-BgcqhkjOPQQBA2cAMGQCMAsNm3hkaKuYJV2m3sBYFgZYJMEBU/Qkox0fncrGPnjD
-Hd+MrJxQ6aYPp+uTNt9hdgIwP82PqK2UdFQmUPOLw6jpivNRqo+VRVvuS4qRU3qx
-V+11e/Op7TSuOw3oSU/uUGF+
+MIICazCCAc2gAwIBAgIRALU/4pO15RPK2L2QgZEYQWcwCgYIKoZIzj0EAwQwHjEc
+MBoGA1UEAwwTRnJlZW5ldCBDYWZlIFNlcnZlcjAeFw0yMjAzMTkwOTA3MTJaFw0y
+MzAzMTQwOTA3MTJaMBwxGjAYBgNVBAMMEUZyZWVuZXQgQ2FmZSBVc2VyMIGbMBAG
+ByqGSM49AgEGBSuBBAAjA4GGAAQBNYYxzglNvyyt3iOp2rvHhH0KHGej4JgAb5IN
+VyYo6KNi1/rGGa3pbg1GB8Mc7wXsISyDTlQLsd8xhAJKvSMyzkcAJo7HEpkZv2Ha
+bn+tk8Z3tTW046J+7+Kv1GgKei0L0cNjFnw1Lu6fyZZSK/OHXXODtHX36apXc8DV
+mZd/H9zSwKGjgaowgacwCQYDVR0TBAIwADAdBgNVHQ4EFgQUdXJ9cuoit/hBNWU0
+/zBfZBwH6YowWQYDVR0jBFIwUIAUHC45UEAhO6mDXj55d8matmL+BnOhIqQgMB4x
+HDAaBgNVBAMME0ZyZWVuZXQgQ2FmZSBTZXJ2ZXKCFAIVYzaSJTEg+s2fYnGETA1I
+gFf0MBMGA1UdJQQMMAoGCCsGAQUFBwMCMAsGA1UdDwQEAwIHgDAKBggqhkjOPQQD
+BAOBiwAwgYcCQWb+zMNAcqkixyHxdt6FmElZXP6HHoamEJzfo7uOwxAZmYrgyO1Y
+CjAy1lQqcxe8OoktrlgsTl1zvo7Y7BqlV/oZAkIBrBvS4IZtl9wyLasCYVQYXb/W
+w47Wxf8GH5aXQ64TWrZUXY/xszqjkJBkhQqu8CwIXuNjzJYJQI9wkEOkpnfDrYE=
 -----END CERTIFICATE-----
 clientcert
 
@@ -687,12 +703,18 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-128-CBC
-auth sha512
+auth SHA512
+cipher AES-256-GCM
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+tls-client
 verb 3
 mute 20
-key-direction 1
 compress lz4
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
 http-proxy-option CUSTOM-HEADER Host vt.tiktok.com
@@ -719,6 +741,7 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port2
+remote-cert-tls server
 resolv-retry infinite
 nobind
 user nobody
@@ -728,12 +751,18 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-128-CBC
-auth sha512
+auth SHA512
+cipher AES-256-GCM
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+tls-client
 verb 3
 mute 20
-key-direction 1
 compress lz4
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port2
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -761,6 +790,7 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
+remote-cert-tls server
 resolv-retry infinite
 nobind
 user nobody
@@ -770,12 +800,18 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-128-CBC
-auth sha512
+auth SHA512
+cipher AES-256-GCM
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+tls-client
 verb 3
 mute 20
-key-direction 1
 compress lz4
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -803,6 +839,7 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
+remote-cert-tls server
 resolv-retry infinite
 nobind
 user nobody
@@ -812,12 +849,18 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-128-CBC
-auth sha512
+auth SHA512
+cipher AES-256-GCM
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+tls-client
 verb 3
 mute 20
-key-direction 1
 compress lz4
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -845,6 +888,7 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
+remote-cert-tls server
 resolv-retry infinite
 nobind
 user nobody
@@ -854,12 +898,18 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-128-CBC
-auth sha512
+auth SHA512
+cipher AES-256-GCM
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+tls-client
 verb 3
 mute 20
-key-direction 1
 compress lz4
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -887,6 +937,7 @@ client
 dev tun
 proto udp
 remote $IPADDR $OpenVPN_Port3
+remote-cert-tls server
 resolv-retry infinite
 nobind
 user nobody
@@ -896,12 +947,18 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-128-CBC
-auth sha512
+auth SHA512
+cipher AES-256-GCM
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+tls-client
 verb 3
 mute 20
-key-direction 1
 compress lz4
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
 
 <ca>
 $(cat /etc/openvpn/ca.crt)
@@ -932,12 +989,18 @@ persist-tun
 auth-user-pass
 mute-replay-warnings
 remote-cert-tls server
-cipher AES-128-CBC
-auth sha512
+auth SHA512
+cipher AES-256-GCM
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+tls-client
 verb 3
 mute 20
-key-direction 1
 compress lz4
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 1.0.0.1"
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 8.8.4.4"
+push "dhcp-option DNS 8.8.8.8"
 
 <ca>
 $(cat /etc/openvpn/ca.crt)
