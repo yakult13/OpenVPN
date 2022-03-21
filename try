@@ -198,7 +198,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 10.8.0.0 255.255.0.0
+server 172.18.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -233,7 +233,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 10.9.0.0 255.255.0.0
+server 172.19.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -268,7 +268,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 10.10.0.0 255.255.0.0
+server 172.20.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -303,7 +303,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh none
-server 10.11.0.0 255.255.0.0
+server 172.21.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
 duplicate-cn
 keepalive 10 120
@@ -695,6 +695,7 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 resolv-retry infinite
+remote-cert-tls server
 nobind
 user nobody
 group nogroup
@@ -702,7 +703,6 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
-remote-cert-tls server
 auth sha512
 cipher AES-256-GCM
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
