@@ -34,6 +34,8 @@ Privoxy_Port2='8787'
 OvpnDownload_Port='1998'
 MyVPS_Time='Asia/Manila'
 
+IPADDR="$(curl -4skL http://ipinfo.io/ip)"
+
 function  Instupdate() {
 export DEBIAN_FRONTEND=noninteractive
  apt-get update
@@ -1117,14 +1119,6 @@ mySiteOvpn
  cd
 }
 
-function ip_address(){
-  local IP="$( ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )"
-  [ -z "${IP}" ] && IP="$( wget -qO- -t1 -T2 ipv4.icanhazip.com )"
-  [ -z "${IP}" ] && IP="$( wget -qO- -t1 -T2 ipinfo.io/ip )"
-  [ ! -z "${IP}" ] && echo "${IP}" || echo
-} 
-IPADDR="$(ip_address)"
-
 function ConfStartup(){
  # Daily reboot time of our machine
  # For cron commands, visit https://crontab.guru
@@ -1327,6 +1321,7 @@ systemctl restart ssht
  echo -e " Copy This On Your Note !"
  echo -e ""
  echo -e " Service Ports: "
+ echo -e " IP: $IPADDR"
  echo -e " SSH: $SSH_Port1, $SSH_Port2"
  echo -e " SSL: $Stunnel_Port1, $Stunnel_Port2"
  echo -e " Dropbear: $Dropbear_Port1, $Dropbear_Port2"
