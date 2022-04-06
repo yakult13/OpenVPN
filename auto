@@ -1,0 +1,479 @@
+#!/bin/bash
+# shellcheck disable=SC1091,SC2164,SC2034,SC1072,SC1073,SC1009
+
+
+function initialCheck() {
+	if ! isRoot; then
+		echo "Sorry, you need to run this as root"
+		exit 1
+	fi
+	if ! tunAvailable; then
+		echo "TUN is not available"
+		exit 1
+	fi
+	checkOS
+}
+
+function isRoot() {
+	if [ "$EUID" -ne 0 ]; then
+		return 1
+	fi
+}
+
+function tunAvailable() {
+	if [ ! -e /dev/net/tun ]; then
+		return 1
+	fi
+}
+
+function checkOS() {
+	if [[ -e /etc/debian_version ]]; then
+		OS="debian"
+		source /etc/os-release
+
+		if [[ $ID == "debian" || $ID == "raspbian" ]]; then
+			if [[ $VERSION_ID -lt 9 ]]; then
+				echo "⚠️ Your version of Debian is not supported."
+				echo ""
+				echo "However, if you're using Debian >= 9 or unstable/testing then you can continue, at your own risk."
+				echo ""
+				until [[ $CONTINUE =~ (y|n) ]]; do
+					read -rp "Continue? [y/n]: " -e CONTINUE
+				done
+				if [[ $CONTINUE == "n" ]]; then
+					exit 1
+				fi
+			fi
+		elif [[ $ID == "ubuntu" ]]; then
+			OS="ubuntu"
+			MAJOR_UBUNTU_VERSION=$(echo "$VERSION_ID" | cut -d '.' -f1)
+			if [[ $MAJOR_UBUNTU_VERSION -lt 18 ]]; then
+				echo "⚠️ Your version of Ubuntu is not supported."
+				echo ""
+				echo "However, if you're using Ubuntu >= 20.04 or beta, then you can continue, at your own risk."
+				echo ""
+				until [[ $CONTINUE =~ (y|n) ]]; do
+					read -rp "Continue? [y/n]: " -e CONTINUE
+				done
+				if [[ $CONTINUE == "n" ]]; then
+					exit 1
+				fi
+			fi
+		fi
+	else
+		echo "Looks like you aren't running this installer on a Debian, Ubuntu."
+		exit 1
+	fi
+}
+
+initialCheck
+
+echo ""
+echo "Checking for IPv6 connectivity..."
+echo ""
+# "ping6" and "ping -6" availability varies depending on the distribution
+if type ping6 >/dev/null 2>&1; then
+	PING6="ping6 -c3 ipv6.google.com > /dev/null 2>&1"
+else
+	PING6="ping -6 -c3 ipv6.google.com > /dev/null 2>&1"
+fi
+if eval "$PING6"; then
+	echo "Your host appears to have IPv6 connectivity."
+	SUGGESTION="y"
+else
+	echo "Your host does not appear to have IPv6 connectivity."
+	SUGGESTION="n"
+fi
+echo ""
+# Ask the user if they want to enable IPv6 regardless its availability.
+until [[ $IPV6_SUPPORT =~ (y|n) ]]; do
+	read -rp "Do you want to enable IPv6 support (NAT)? [y/n]: " -e -i $SUGGESTION IPV6_SUPPORT
+done
+
+NIC=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
+	if [[ -z $NIC ]] && [[ $IPV6_SUPPORT == 'y' ]]; then
+		NIC=$(ip -6 route show default | sed -ne 's/^default .* dev \([^ ]*\) .*$/\1/p')
+	fi
+
+	# $NIC can not be empty for script rm-openvpn-rules.sh
+	if [[ -z $NIC ]]; then
+		echo
+		echo "Can not detect public interface."
+		echo "This needs for setup MASQUERADE."
+		until [[ $CONTINUE =~ (y|n) ]]; do
+			read -rp "Continue? [y/n]: " -e CONTINUE
+		done
+		if [[ $CONTINUE == "n" ]]; then
+			exit 1
+		fi
+	fi
+
+if [[ ! -e /etc/openvpn/server.conf ]]; then
+	if [[ $OS =~ (debian|ubuntu) ]]; then
+		apt-get update
+		apt-get -y install ca-certificates gnupg gnupg2
+		# We add the OpenVPN repo to get the latest version.
+		if [[ $VERSION_ID == "18.04" ]]; then
+			echo "deb http://build.openvpn.net/debian/openvpn/stable $(lsb_release -sc) main" >/etc/apt/sources.list.d/openvpn.list
+			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt-get update
+		fi
+		# Ubuntu > 16.04 and Debian > 8 have OpenVPN >= 2.4 without the need of a third party repository.
+		apt-get install -y openvpn iptables openssl wget ca-certificates curl
+	fi
+		# An old version of easy-rsa was available by default in some openvpn packages
+	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
+		rm -rf /etc/openvpn/easy-rsa/
+	fi
+fi
+
+# Find out if the machine uses nogroup or nobody for the permissionless group
+if grep -qs "^nogroup:" /etc/group; then
+	NOGROUP=nogroup
+else
+	NOGROUP=nobody
+fi
+
+if [[ ! -d /etc/openvpn/easy-rsa/ ]]; then
+	local version="3.0.7"
+	wget -O ~/easy-rsa.tgz https://github.com/OpenVPN/easy-rsa/releases/download/v${version}/EasyRSA-${version}.tgz
+	mkdir -p /etc/openvpn/easy-rsa
+	tar xzf ~/easy-rsa.tgz --strip-components=1 --directory /etc/openvpn/easy-rsa
+	rm -f ~/easy-rsa.tgz
+
+	cd /etc/openvpn/easy-rsa/ || return	
+	echo "set_var EASYRSA_ALGO ec" >vars
+	echo "set_var EASYRSA_CURVE secp521r1" >>vars
+
+	# Generate a random, alphanumeric identifier of 16 characters for CN and one for server name
+	SERVER_CN="Freenet_Cafe"
+    SERVER_NAME="FREENET_CAFE"
+
+	echo "$SERVER_CN" >SERVER_CN_GENERATED
+	echo "$SERVER_NAME" >SERVER_NAME_GENERATED
+	echo "set_var EASYRSA_REQ_CN $SERVER_CN" >>vars
+
+	# Create the PKI, set up the CA, the DH params and the server certificate
+	./easyrsa init-pki
+	./easyrsa --batch build-ca nopass
+	./easyrsa build-server-full "$SERVER_NAME" nopass
+	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+    openvpn --genkey --secret /etc/openvpn/tls-crypt.key
+		
+else
+	# If easy-rsa is already installed, grab the generated SERVER_NAME
+	# for client configs
+	cd /etc/openvpn/easy-rsa/ || return
+	SERVER_NAME=$(cat SERVER_NAME_GENERATED)
+fi
+
+cp pki/ca.crt pki/private/ca.key "pki/issued/$SERVER_NAME.crt" "pki/private/$SERVER_NAME.key" /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
+chmod 644 /etc/openvpn/crl.pem
+
+echo "port 1194
+proto udp6
+dev tun
+user nobody
+group $NOGROUP
+persist-key
+persist-tun
+keepalive 10 120
+topology subnet
+server 10.8.0.0 255.255.255.0
+ifconfig-pool-persist ipp.txt
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+push "redirect-gateway def1 bypass-dhcp"
+server-ipv6 fd42:42:42:42::/112
+tun-ipv6
+push tun-ipv6
+push "route-ipv6 2000::/3"
+push "redirect-gateway ipv6"
+compress lz4-v2
+dh none
+ecdh-curve secp521r1
+tls-crypt tls-crypt.key
+crl-verify crl.pem
+ca ca.crt
+cert $SERVER_NAME.crt
+key $SERVER_NAME.key
+auth SHA512
+cipher AES-128-CBC
+ncp-ciphers AES-128-CBC
+tls-server
+tls-version-min 1.2
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
+client-config-dir /etc/openvpn/ccd
+status /var/log/openvpn/status.log
+verb 3" >>/etc/openvpn/server_udp.conf
+
+echo "port 443
+proto tcp6
+dev tun
+user nobody
+group $NOGROUP
+persist-key
+persist-tun
+keepalive 10 120
+topology subnet
+server 10.8.0.0 255.255.255.0
+ifconfig-pool-persist ipp.txt
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+push "redirect-gateway def1 bypass-dhcp"
+server-ipv6 fd42:42:42:42::/112
+tun-ipv6
+push tun-ipv6
+push "route-ipv6 2000::/3"
+push "redirect-gateway ipv6"
+compress lz4-v2
+dh none
+ecdh-curve secp521r1
+tls-crypt tls-crypt.key
+crl-verify crl.pem
+ca ca.crt
+cert $SERVER_NAME.crt
+key $SERVER_NAME.key
+auth SHA512
+cipher AES-128-CBC
+ncp-ciphers AES-128-CBC
+tls-server
+tls-version-min 1.2
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
+client-config-dir /etc/openvpn/ccd
+status /var/log/openvpn/status.log
+verb 3" >>/etc/openvpn/server_tcp.conf
+
+# Create client-config-dir dir
+mkdir -p /etc/openvpn/ccd
+# Create log dir
+mkdir -p /var/log/openvpn
+
+# Enable routing
+echo 'net.ipv4.ip_forward=1' >/etc/sysctl.d/99-openvpn.conf
+echo 'net.ipv6.conf.all.forwarding=1' >>/etc/sysctl.d/99-openvpn.conf
+
+# Apply sysctl rules
+sysctl --system
+
+if [[ $OS == "ubuntu" ]] && [[ $VERSION_ID == "18.04" ]]; then
+	# On Ubuntu 16.04, we use the package from the OpenVPN repo
+	# This package uses a sysvinit service
+	systemctl enable openvpn
+	systemctl start openvpn
+else
+	# Don't modify package-provided service
+	cp /lib/systemd/system/openvpn\@.service /etc/systemd/system/openvpn\@.service
+
+	# Workaround to fix OpenVPN service on OpenVZ
+	sed -i 's|LimitNPROC|#LimitNPROC|' /etc/systemd/system/openvpn\@.service
+	# Another workaround to keep using /etc/openvpn/
+	sed -i 's|/etc/openvpn/server|/etc/openvpn|' /etc/systemd/system/openvpn\@.service
+
+	systemctl daemon-reload
+	systemctl enable openvpn@server_tcp
+    systemctl enable openvpn@server_udp
+	systemctl restart openvpn@server_tcp
+    systemctl restart openvpn@server_udp
+fi
+
+# Add iptables rules in two scripts
+mkdir -p /etc/iptables
+
+# Script to add rules
+echo "#!/bin/sh
+iptables -t nat -I POSTROUTING 1 -s 10.8.0.0/24 -o $NIC -j MASQUERADE
+iptables -I INPUT 1 -i tun0 -j ACCEPT
+iptables -I FORWARD 1 -i $NIC -o tun0 -j ACCEPT
+iptables -I FORWARD 1 -i tun0 -o $NIC -j ACCEPT
+iptables -I INPUT 1 -i $NIC -p $PROTOCOL --dport $PORT -j ACCEPT" >/etc/iptables/add-openvpn-rules.sh
+
+if [[ $IPV6_SUPPORT == 'y' ]]; then
+    echo "ip6tables -t nat -I POSTROUTING 1 -s fd42:42:42:42::/112 -o $NIC -j MASQUERADE
+    ip6tables -I INPUT 1 -i tun0 -j ACCEPT
+    ip6tables -I FORWARD 1 -i $NIC -o tun0 -j ACCEPT
+    ip6tables -I FORWARD 1 -i tun0 -o $NIC -j ACCEPT
+    ip6tables -I INPUT 1 -i $NIC -p $PROTOCOL --dport $PORT -j ACCEPT" >>/etc/iptables/add-openvpn-rules.sh
+fi
+
+# Script to remove rules
+echo "#!/bin/sh
+iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -o $NIC -j MASQUERADE
+iptables -D INPUT -i tun0 -j ACCEPT
+iptables -D FORWARD -i $NIC -o tun0 -j ACCEPT
+iptables -D FORWARD -i tun0 -o $NIC -j ACCEPT
+iptables -D INPUT -i $NIC -p $PROTOCOL --dport $PORT -j ACCEPT" >/etc/iptables/rm-openvpn-rules.sh
+
+if [[ $IPV6_SUPPORT == 'y' ]]; then
+	echo "ip6tables -t nat -D POSTROUTING -s fd42:42:42:42::/112 -o $NIC -j MASQUERADE
+    ip6tables -D INPUT -i tun0 -j ACCEPT
+    ip6tables -D FORWARD -i $NIC -o tun0 -j ACCEPT
+    ip6tables -D FORWARD -i tun0 -o $NIC -j ACCEPT
+    ip6tables -D INPUT -i $NIC -p $PROTOCOL --dport $PORT -j ACCEPT" >>/etc/iptables/rm-openvpn-rules.sh
+fi
+
+chmod +x /etc/iptables/add-openvpn-rules.sh
+chmod +x /etc/iptables/rm-openvpn-rules.sh
+
+# Handle the rules via a systemd script
+echo "[Unit]
+Description=iptables rules for OpenVPN
+Before=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/iptables/add-openvpn-rules.sh
+ExecStop=/etc/iptables/rm-openvpn-rules.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target" >/etc/systemd/system/iptables-openvpn.service
+
+# Enable service and apply rules
+systemctl daemon-reload
+systemctl enable iptables-openvpn
+systemctl start iptables-openvpn
+
+echo "
+client
+proto udp
+explicit-exit-notify
+remote $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) 1194
+dev tun
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+verify-x509-name $SERVER_NAME name
+auth $HMAC_ALG
+auth-nocache
+cipher $CIPHER
+tls-client
+tls-version-min 1.2
+tls-cipher $CC_CIPHER
+ignore-unknown-option block-outside-dns
+setenv opt block-outside-dns # Prevent Windows 10 DNS leak
+verb 3" >>/etc/openvpn/clientUDP-template.txt
+
+echo "
+client
+proto tcp
+explicit-exit-notify
+remote $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) 1194
+dev tun
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+verify-x509-name $SERVER_NAME name
+auth $HMAC_ALG
+auth-nocache
+cipher $CIPHER
+tls-client
+tls-version-min 1.2
+tls-cipher $CC_CIPHER
+ignore-unknown-option block-outside-dns
+setenv opt block-outside-dns # Prevent Windows 10 DNS leak
+verb 3" >>/etc/openvpn/clientTCP-template.txt
+
+function newClient() {
+	echo ""
+	echo "Tell me a name for the client."
+	echo "The name must consist of alphanumeric character. It may also include an underscore or a dash."
+
+	until [[ $CLIENT =~ ^[a-zA-Z0-9_-]+$ ]]; do
+		read -rp "Client name: " -e CLIENT
+	done
+
+	echo ""
+	echo "Do you want to protect the configuration file with a password?"
+	echo "(e.g. encrypt the private key with a password)"
+	echo "   1) Add a passwordless client"
+	echo "   2) Use a password for the client"
+
+	until [[ $PASS =~ ^[1-2]$ ]]; do
+		read -rp "Select an option [1-2]: " -e -i 1 PASS
+	done
+
+	CLIENTEXISTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c -E "/CN=$CLIENT\$")
+	if [[ $CLIENTEXISTS == '1' ]]; then
+		echo ""
+		echo "The specified client CN was already found in easy-rsa, please choose another name."
+		exit
+	else
+		cd /etc/openvpn/easy-rsa/ || return
+		case $PASS in
+		1)
+			./easyrsa build-client-full "$CLIENT" nopass
+			;;
+		2)
+			echo "⚠️ You will be asked for the client password below ⚠️"
+			./easyrsa build-client-full "$CLIENT"
+			;;
+		esac
+		echo "Client $CLIENT added."
+	fi
+
+	# Home directory of the user, where the client configuration will be written
+	if [ -e "/home/${CLIENT}" ]; then
+		# if $1 is a user name
+		homeDir="/home/${CLIENT}"
+	elif [ "${SUDO_USER}" ]; then
+		# if not, use SUDO_USER
+		if [ "${SUDO_USER}" == "root" ]; then
+			# If running sudo as root
+			homeDir="/root"
+		else
+			homeDir="/home/${SUDO_USER}"
+		fi
+	else
+		# if not SUDO_USER, use /root
+		homeDir="/root"
+	fi
+
+	# Determine if we use tls-auth or tls-crypt
+	if grep -qs "^tls-crypt" /etc/openvpn/server.conf; then
+		TLS_SIG="1"
+	elif grep -qs "^tls-auth" /etc/openvpn/server.conf; then
+		TLS_SIG="2"
+	fi
+
+	# Generates the custom client.ovpn
+	cp /etc/openvpn/client*.txt "$homeDir/$CLIENT.ovpn"
+	{
+		echo "<ca>"
+		cat "/etc/openvpn/easy-rsa/pki/ca.crt"
+		echo "</ca>"
+
+		echo "<cert>"
+		awk '/BEGIN/,/END/' "/etc/openvpn/easy-rsa/pki/issued/$CLIENT.crt"
+		echo "</cert>"
+
+		echo "<key>"
+		cat "/etc/openvpn/easy-rsa/pki/private/$CLIENT.key"
+		echo "</key>"
+
+		case $TLS_SIG in
+		1)
+			echo "<tls-crypt>"
+			cat /etc/openvpn/tls-crypt.key
+			echo "</tls-crypt>"
+			;;
+		2)
+			echo "key-direction 1"
+			echo "<tls-auth>"
+			cat /etc/openvpn/tls-auth.key
+			echo "</tls-auth>"
+			;;
+		esac
+	} >>"$homeDir/$CLIENT.ovpn"
+
+	echo ""
+	echo "The configuration file has been written to $homeDir/$CLIENT.ovpn."
+	echo "Download the .ovpn file and import it in your OpenVPN client."
+
+	exit 0
+}
