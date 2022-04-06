@@ -68,6 +68,7 @@ function checkOS() {
 
 initialCheck
 
+function installQuestions() {
 echo ""
 echo "Checking for IPv6 connectivity..."
 echo ""
@@ -89,12 +90,14 @@ echo ""
 until [[ $IPV6_SUPPORT =~ (y|n) ]]; do
 	read -rp "Do you want to enable IPv6 support (NAT)? [y/n]: " -e -i $SUGGESTION IPV6_SUPPORT
 done
+}
 
+function installOpenVPN() {
 NIC=$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)
 	if [[ -z $NIC ]] && [[ $IPV6_SUPPORT == 'y' ]]; then
 		NIC=$(ip -6 route show default | sed -ne 's/^default .* dev \([^ ]*\) .*$/\1/p')
 	fi
-
+installQuestions
 	# $NIC can not be empty for script rm-openvpn-rules.sh
 	if [[ -z $NIC ]]; then
 		echo
@@ -271,8 +274,10 @@ else
 	sed -i 's|/etc/openvpn/server|/etc/openvpn|' /etc/systemd/system/openvpn\@.service
 
 	systemctl daemon-reload
+    systemctl enable openvpn
 	systemctl enable openvpn@server_tcp
     systemctl enable openvpn@server_udp
+    systemctl restart openvpn
 	systemctl restart openvpn@server_tcp
     systemctl restart openvpn@server_udp
 fi
@@ -378,6 +383,7 @@ tls-cipher TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
 ignore-unknown-option block-outside-dns
 setenv opt block-outside-dns # Prevent Windows 10 DNS leak
 verb 3" >>/etc/openvpn/clientTCP-template.txt
+}
 
 function newClient() {
 	echo ""
