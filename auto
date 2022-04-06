@@ -361,7 +361,7 @@ echo "
 client
 proto tcp
 explicit-exit-notify
-remote $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) 1194
+remote $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) 443
 dev tun
 resolv-retry infinite
 nobind
