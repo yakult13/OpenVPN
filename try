@@ -196,212 +196,212 @@ function InsOpenVPN(){
 port MyOvpnPort1
 proto tcp
 dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh dh.pem
+server 172.18.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4-v2
+max-clients 4000
 user nobody
 group nogroup
 persist-key
 persist-tun
-keepalive 10 120
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
 topology subnet
-server 10.8.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt
-push "dhcp-option DNS 8.8.8.8"
-push "dhcp-option DNS 8.8.4.4"
-push "redirect-gateway def1 bypass-dhcp"
-server-ipv6 fd42:42:42:42::/112
-tun-ipv6
-push tun-ipv6
-push "route-ipv6 2000::/3"
-push "redirect-gateway ipv6"
-compress lz4-v2
-dh none
 ecdh-curve secp521r1
-tls-crypt tls-crypt.key
-crl-verify crl.pem
-ca ca.crt
-cert FREENET_CAFE.crt
-key FREENET_CAFE.key
-auth SHA512
+explicit-exit-notify 0
 cipher AES-128-CBC
 ncp-ciphers AES-128-CBC
+auth SHA512
+push "redirect-gateway def1 bypass-dhcp"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
 tls-server
 tls-version-min 1.2
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
-client-config-dir /etc/openvpn/ccd
-status /var/log/openvpn/status.log
-verb 3
 VPN1
 
 cat <<'VPN2' > /etc/openvpn/server_tcp1.conf
 port MyOvpnPort2
 proto tcp
 dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh dh.pem
+server 172.19.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4-v2
+max-clients 4000
 user nobody
 group nogroup
 persist-key
 persist-tun
-keepalive 10 120
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
 topology subnet
-server 10.9.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt
-push "dhcp-option DNS 8.8.8.8"
-push "dhcp-option DNS 8.8.4.4"
-push "redirect-gateway def1 bypass-dhcp"
-server-ipv6 fd42:42:42:42::/112
-tun-ipv6
-push tun-ipv6
-push "route-ipv6 2000::/3"
-push "redirect-gateway ipv6"
-compress lz4-v2
-dh none
 ecdh-curve secp521r1
-tls-crypt tls-crypt.key
-crl-verify crl.pem
-ca ca.crt
-cert FREENET_CAFE.crt
-key FREENET_CAFE.key
-auth SHA512
+explicit-exit-notify 0
 cipher AES-128-CBC
 ncp-ciphers AES-128-CBC
+auth SHA512
+push "redirect-gateway def1 bypass-dhcp"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
 tls-server
 tls-version-min 1.2
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
-client-config-dir /etc/openvpn/ccd
-status /var/log/openvpn/status.log
-verb 3
 VPN2
 
  cat <<'VPN3' > /etc/openvpn/server_udp.conf
 port MyOvpnPort3
 proto udp
 dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh dh.pem
+server 172.20.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4-v2
+max-clients 4000
 user nobody
 group nogroup
 persist-key
 persist-tun
-keepalive 10 120
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
 topology subnet
-server 10.11.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt
-push "dhcp-option DNS 8.8.8.8"
-push "dhcp-option DNS 8.8.4.4"
-push "redirect-gateway def1 bypass-dhcp"
-server-ipv6 fd42:42:42:42::/112
-tun-ipv6
-push tun-ipv6
-push "route-ipv6 2000::/3"
-push "redirect-gateway ipv6"
-compress lz4-v2
-dh none
 ecdh-curve secp521r1
-tls-crypt tls-crypt.key
-crl-verify crl.pem
-ca ca.crt
-cert FREENET_CAFE.crt
-key FREENET_CAFE.key
-auth SHA512
+explicit-exit-notify 0
 cipher AES-128-CBC
 ncp-ciphers AES-128-CBC
+auth SHA512
+push "redirect-gateway def1 bypass-dhcp"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
 tls-server
 tls-version-min 1.2
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
-client-config-dir /etc/openvpn/ccd
-status /var/log/openvpn/status.log
-verb 3
 VPN3
 
  cat <<'VPN4' > /etc/openvpn/server_udp1.conf
 port MyOvpnPort4
 proto udp
 dev tun
+ca ca.crt
+cert server.crt
+key server.key
+dh dh.pem
+server 172.21.0.0 255.255.0.0
+ifconfig-pool-persist /etc/openvpn/ipp.txt
+duplicate-cn
+keepalive 10 120
+tls-crypt ta.key
+compress lz4-v2
+max-clients 4000
 user nobody
 group nogroup
 persist-key
 persist-tun
-keepalive 10 120
+status /etc/openvpn/openvpn-status.log
+log /etc/openvpn/openvpn.log
+verb 3
+mute 20
 topology subnet
-server 10.12.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt
-push "dhcp-option DNS 8.8.8.8"
-push "dhcp-option DNS 8.8.4.4"
-push "redirect-gateway def1 bypass-dhcp"
-server-ipv6 fd42:42:42:42::/112
-tun-ipv6
-push tun-ipv6
-push "route-ipv6 2000::/3"
-push "redirect-gateway ipv6"
-compress lz4-v2
-dh none
 ecdh-curve secp521r1
-tls-crypt tls-crypt.key
-crl-verify crl.pem
-ca ca.crt
-cert FREENET_CAFE.crt
-key FREENET_CAFE.key
-auth SHA512
+explicit-exit-notify 0
 cipher AES-128-CBC
 ncp-ciphers AES-128-CBC
+auth SHA512
+push "redirect-gateway def1 bypass-dhcp"
+socket-flags TCP_NODELAY
+push "socket-flags TCP_NODELAY"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
 tls-server
 tls-version-min 1.2
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-128-GCM-SHA256
-client-config-dir /etc/openvpn/ccd
-status /var/log/openvpn/status.log
-verb 3
 VPN4
 
  cat <<'CERT'> /etc/openvpn/ca.crt
 -----BEGIN CERTIFICATE-----
-MIICSjCCAaugAwIBAgIUbZiA1kylQt1/HPS801/Wdh0owqEwCgYIKoZIzj0EAwIw
-FzEVMBMGA1UEAwwMRlJFRU5FVF9DQUZFMB4XDTIyMDQwNjE2MTA0MVoXDTMyMDQw
-MzE2MTA0MVowFzEVMBMGA1UEAwwMRlJFRU5FVF9DQUZFMIGbMBAGByqGSM49AgEG
-BSuBBAAjA4GGAAQAn0PKFZC0R7u4KBy9s+xAhoPhEHSKWqF90aj+vITYtpFtyAKv
-OOVlBXWMdsMincP84dNgdHurgNoyaIgBx1Z7Js4BXUeMP/YNfucDAJUa0VRU6iBK
-Al1B2ufHMstn3r72un7bLuyJnenYE5l2ARfky66Iz4snuZ0M8/g8+ue362x0jy2j
-gZEwgY4wHQYDVR0OBBYEFOAxoYnVGKSFnIjQS8MMUkfepuhCMFIGA1UdIwRLMEmA
-FOAxoYnVGKSFnIjQS8MMUkfepuhCoRukGTAXMRUwEwYDVQQDDAxGUkVFTkVUX0NB
-RkWCFG2YgNZMpULdfxz0vNNf1nYdKMKhMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQD
-AgEGMAoGCCqGSM49BAMCA4GMADCBiAJCAI7Dvhup9cwhvyyaivTeiDAKM0pHLPoa
-KyQw3KJRsN+CXXxfzO854See3k97Kn9KbtpuWxUIf4dYk3jRRP9rdebuAkIA67xM
-Bpi9vfXCDMzkKVAJeviTGoZGXOr4ln3iOsKJ2Q1XjpJJ2afEd6Srh7w1pc1V2qRF
-SmlNTksBH6wPAWc2fuI=
+MIICSjCCAaugAwIBAgIUFEtB8rfQzITHeQLZF6fUnYsv5wgwCgYIKoZIzj0EAwQw
+FzEVMBMGA1UEAwwMRlJFRU5FVF9DQUZFMB4XDTIyMDQwNzA5MDUyOFoXDTMyMDQw
+NDA5MDUyOFowFzEVMBMGA1UEAwwMRlJFRU5FVF9DQUZFMIGbMBAGByqGSM49AgEG
+BSuBBAAjA4GGAAQBy/n6u92Pi3XZSc8R6ZEZn3jib1IQG6f3bAgGjAqayRnDVo6M
+JK0kf02wi/b7+XPdY21nnL3dVKFDjZBPJU+FcBMA/M2YRWciiDxnFURybvXQudW9
+MqtW4X1Sr1+IP1JNPwBlv/NdPuhZzmyZg7L3st0n48OauuxEpiKFK+yMulVCLuCj
+gZEwgY4wHQYDVR0OBBYEFPUKRLqRwqUxMPpIdrBgWsxplqocMFIGA1UdIwRLMEmA
+FPUKRLqRwqUxMPpIdrBgWsxplqocoRukGTAXMRUwEwYDVQQDDAxGUkVFTkVUX0NB
+RkWCFBRLQfK30MyEx3kC2Ren1J2LL+cIMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQD
+AgEGMAoGCCqGSM49BAMEA4GMADCBiAJCAWO0F7uls5t4HvfvKKCjiL2HS5+XEHCb
+zjUbc68TF4Vn4meofXWJGiIiQn9EzkU4kP83eZV5tYoqvCEn7YNF6p+sAkIBA42K
+bIT+XWBWJH59ynzUmsnmLHM0PGDvnHRmrP6btOzppt0k42dm+2kXPS5dVIF2Z+9C
+vxn9Q7gBrdo3sE+VwXE=
 -----END CERTIFICATE-----
 CERT
 
- cat <<'SCERT'> /etc/openvpn/FREENET_CAFE.crt
+ cat <<'SCERT'> /etc/openvpn/server.crt
 Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number:
-            43:c6:5a:25:5b:ba:ae:d8:d4:c6:c5:6f:aa:df:9f:cf
-        Signature Algorithm: ecdsa-with-SHA256
+            b6:ea:75:2f:24:22:f4:2c:90:ab:05:f8:2b:e0:6e:e0
+        Signature Algorithm: ecdsa-with-SHA512
         Issuer: CN=FREENET_CAFE
         Validity
-            Not Before: Apr  6 16:10:41 2022 GMT
-            Not After : Jul  9 16:10:41 2024 GMT
+            Not Before: Apr  7 09:07:34 2022 GMT
+            Not After : Apr  4 09:07:34 2032 GMT
         Subject: CN=FREENET_CAFE
         Subject Public Key Info:
             Public Key Algorithm: id-ecPublicKey
                 Public-Key: (521 bit)
                 pub:
-                    04:00:0a:e8:bc:7c:b7:9d:bf:12:b2:4b:e8:96:89:
-                    58:45:ff:02:8f:6e:e4:58:4b:06:3c:e4:52:da:f9:
-                    c2:2e:91:86:e8:3c:22:c9:cb:aa:2a:c3:3c:7a:3d:
-                    8f:c3:96:01:b8:dc:cb:33:f1:9e:b2:60:9f:32:d4:
-                    e7:98:1e:d6:55:d2:c8:00:3e:68:f5:75:f6:ed:d3:
-                    24:c1:b5:af:74:7d:94:17:8e:4d:73:46:57:bb:b4:
-                    03:7b:b0:0d:93:8e:75:79:7e:bc:73:d6:a5:ba:88:
-                    8b:04:75:10:07:1a:49:a8:7c:4c:a6:1f:f3:a2:43:
-                    1c:d4:dc:fb:ce:f3:34:99:6d:cb:68:d7:8f
+                    04:00:94:7b:84:fe:8a:72:f8:92:f7:0d:25:4b:f0:
+                    c1:ec:6f:98:d7:21:02:d8:44:43:a3:bc:a7:de:7b:
+                    dc:ab:76:1a:98:98:2d:d3:6d:41:a1:3d:4f:72:86:
+                    cb:b4:1e:f6:fd:71:cd:ea:5c:8e:a7:17:eb:1e:46:
+                    4a:94:c6:cf:20:65:22:01:b8:15:c8:59:45:04:7c:
+                    4e:9e:72:eb:7e:29:eb:49:a8:3f:d8:5b:64:4f:1f:
+                    3f:da:ca:e0:6e:dc:d2:00:48:6d:b5:12:a3:c5:57:
+                    a6:48:61:5a:be:6b:96:13:3c:2e:09:e7:bf:e9:a3:
+                    b6:ee:a0:61:22:61:76:0c:5f:f7:e6:86:24
                 ASN1 OID: secp521r1
                 NIST CURVE: P-521
         X509v3 extensions:
             X509v3 Basic Constraints: 
                 CA:FALSE
             X509v3 Subject Key Identifier: 
-                CC:80:FC:75:F8:ED:98:D7:CC:D8:25:06:B8:CF:86:64:D8:FE:8E:AC
+                2B:39:F8:2F:D7:36:D4:E5:B8:7C:8E:00:65:A1:BA:C1:86:86:94:F4
             X509v3 Authority Key Identifier: 
-                keyid:E0:31:A1:89:D5:18:A4:85:9C:88:D0:4B:C3:0C:52:47:DE:A6:E8:42
+                keyid:F5:0A:44:BA:91:C2:A5:31:30:FA:48:76:B0:60:5A:CC:69:96:AA:1C
                 DirName:/CN=FREENET_CAFE
-                serial:6D:98:80:D6:4C:A5:42:DD:7F:1C:F4:BC:D3:5F:D6:76:1D:28:C2:A1
+                serial:14:4B:41:F2:B7:D0:CC:84:C7:79:02:D9:17:A7:D4:9D:8B:2F:E7:08
 
             X509v3 Extended Key Usage: 
                 TLS Web Server Authentication
@@ -409,109 +409,156 @@ Certificate:
                 Digital Signature, Key Encipherment
             X509v3 Subject Alternative Name: 
                 DNS:FREENET_CAFE
-    Signature Algorithm: ecdsa-with-SHA256
-         30:81:88:02:42:01:e5:28:26:70:9e:28:aa:a4:8c:53:fc:d5:
-         b9:4f:76:cb:27:3c:73:1e:ea:85:9f:88:11:df:a2:cd:cd:a0:
-         cd:6d:35:c9:7d:d4:f0:3d:17:56:e7:a6:f4:cd:6a:d2:86:16:
-         7a:26:08:69:06:9b:27:16:18:24:4a:08:e9:6c:ab:43:9e:02:
-         42:01:43:02:2c:a6:ae:5b:d1:1c:d1:05:5a:32:f8:15:09:c9:
-         cf:8d:0d:c7:4c:c4:40:f1:90:df:21:68:63:83:af:3f:7c:47:
-         7b:85:41:e7:a3:c3:cb:b1:0f:4b:c3:01:12:08:6e:d2:d5:e4:
-         fe:92:d0:c5:8a:e2:30:07:89:2a:01:a5:d8
+    Signature Algorithm: ecdsa-with-SHA512
+         30:81:88:02:42:01:4e:16:69:18:49:2e:d6:d6:29:ab:42:b3:
+         72:04:98:6a:1c:8a:44:e3:b5:e1:e9:b0:8b:5a:47:a1:5f:80:
+         35:02:8e:07:28:0d:d4:b9:e4:3f:f9:dd:61:88:bf:7d:79:e2:
+         5d:f7:db:a5:8c:e7:75:39:51:e1:5c:f8:db:d6:4d:aa:98:02:
+         42:00:d8:80:03:26:70:b4:ce:3a:12:c2:fe:a3:2c:50:85:8f:
+         7d:13:63:81:64:a1:57:f0:10:a3:1d:8b:0a:4e:5e:96:14:73:
+         52:b6:8e:ca:77:e8:5a:80:3c:34:32:56:b0:e6:c8:7c:d2:3f:
+         9c:0b:76:8c:1b:f1:39:57:a0:cc:c0:b9:af
 -----BEGIN CERTIFICATE-----
-MIICcTCCAdKgAwIBAgIQQ8ZaJVu6rtjUxsVvqt+fzzAKBggqhkjOPQQDAjAXMRUw
-EwYDVQQDDAxGUkVFTkVUX0NBRkUwHhcNMjIwNDA2MTYxMDQxWhcNMjQwNzA5MTYx
-MDQxWjAXMRUwEwYDVQQDDAxGUkVFTkVUX0NBRkUwgZswEAYHKoZIzj0CAQYFK4EE
-ACMDgYYABAAK6Lx8t52/ErJL6JaJWEX/Ao9u5FhLBjzkUtr5wi6Rhug8IsnLqirD
-PHo9j8OWAbjcyzPxnrJgnzLU55ge1lXSyAA+aPV19u3TJMG1r3R9lBeOTXNGV7u0
-A3uwDZOOdXl+vHPWpbqIiwR1EAcaSah8TKYf86JDHNTc+87zNJlty2jXj6OBvDCB
-uTAJBgNVHRMEAjAAMB0GA1UdDgQWBBTMgPx1+O2Y18zYJQa4z4Zk2P6OrDBSBgNV
-HSMESzBJgBTgMaGJ1RikhZyI0EvDDFJH3qboQqEbpBkwFzEVMBMGA1UEAwwMRlJF
-RU5FVF9DQUZFghRtmIDWTKVC3X8c9LzTX9Z2HSjCoTATBgNVHSUEDDAKBggrBgEF
-BQcDATALBgNVHQ8EBAMCBaAwFwYDVR0RBBAwDoIMRlJFRU5FVF9DQUZFMAoGCCqG
-SM49BAMCA4GMADCBiAJCAeUoJnCeKKqkjFP81blPdssnPHMe6oWfiBHfos3NoM1t
-Ncl91PA9F1bnpvTNatKGFnomCGkGmycWGCRKCOlsq0OeAkIBQwIspq5b0RzRBVoy
-+BUJyc+NDcdMxEDxkN8haGODrz98R3uFQeejw8uxD0vDARIIbtLV5P6S0MWK4jAH
-iSoBpdg=
+MIICcjCCAdOgAwIBAgIRALbqdS8kIvQskKsF+CvgbuAwCgYIKoZIzj0EAwQwFzEV
+MBMGA1UEAwwMRlJFRU5FVF9DQUZFMB4XDTIyMDQwNzA5MDczNFoXDTMyMDQwNDA5
+MDczNFowFzEVMBMGA1UEAwwMRlJFRU5FVF9DQUZFMIGbMBAGByqGSM49AgEGBSuB
+BAAjA4GGAAQAlHuE/opy+JL3DSVL8MHsb5jXIQLYREOjvKfee9yrdhqYmC3TbUGh
+PU9yhsu0Hvb9cc3qXI6nF+seRkqUxs8gZSIBuBXIWUUEfE6ecut+KetJqD/YW2RP
+Hz/ayuBu3NIASG21EqPFV6ZIYVq+a5YTPC4J57/po7buoGEiYXYMX/fmhiSjgbww
+gbkwCQYDVR0TBAIwADAdBgNVHQ4EFgQUKzn4L9c21OW4fI4AZaG6wYaGlPQwUgYD
+VR0jBEswSYAU9QpEupHCpTEw+kh2sGBazGmWqhyhG6QZMBcxFTATBgNVBAMMDEZS
+RUVORVRfQ0FGRYIUFEtB8rfQzITHeQLZF6fUnYsv5wgwEwYDVR0lBAwwCgYIKwYB
+BQUHAwEwCwYDVR0PBAQDAgWgMBcGA1UdEQQQMA6CDEZSRUVORVRfQ0FGRTAKBggq
+hkjOPQQDBAOBjAAwgYgCQgFOFmkYSS7W1imrQrNyBJhqHIpE47Xh6bCLWkehX4A1
+Ao4HKA3UueQ/+d1hiL99eeJd99uljOd1OVHhXPjb1k2qmAJCANiAAyZwtM46EsL+
+oyxQhY99E2OBZKFX8BCjHYsKTl6WFHNSto7Kd+hagDw0Mlaw5sh80j+cC3aMG/E5
+V6DMwLmv
 -----END CERTIFICATE-----
 SCERT
 
- cat <<'SKEY' > /etc/openvpn/FREENET_CAFE.key
+ cat <<'SKEY' > /etc/openvpn/server.key
 -----BEGIN PRIVATE KEY-----
-MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB0kftWSk7fk9QWf40
-I5GNW8l1b+rXIzxquTMxORTXk74e2vSdy5zV10SgBWqw+5ODQo1rIjgJJRZaozlc
-p+UtbaShgYkDgYYABAAK6Lx8t52/ErJL6JaJWEX/Ao9u5FhLBjzkUtr5wi6Rhug8
-IsnLqirDPHo9j8OWAbjcyzPxnrJgnzLU55ge1lXSyAA+aPV19u3TJMG1r3R9lBeO
-TXNGV7u0A3uwDZOOdXl+vHPWpbqIiwR1EAcaSah8TKYf86JDHNTc+87zNJlty2jX
-jw==
+MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIBD6K9tfZQ57C1O/kg
+L/jgPTWjoJX+75+gIS7SLq//sfEPkeU5d7tHBMOiHOjte0VeCeWP25WH6nBZqc3o
+11kfReehgYkDgYYABACUe4T+inL4kvcNJUvwwexvmNchAthEQ6O8p9573Kt2GpiY
+LdNtQaE9T3KGy7Qe9v1xzepcjqcX6x5GSpTGzyBlIgG4FchZRQR8Tp5y634p60mo
+P9hbZE8fP9rK4G7c0gBIbbUSo8VXpkhhWr5rlhM8Lgnnv+mjtu6gYSJhdgxf9+aG
+JA==
 -----END PRIVATE KEY-----
 SKEY
 
-cat <<'TAK' > /etc/openvpn/tls-crypt.key
+cat <<'TAK' > /etc/openvpn/ta.key
 #
 # 2048 bit OpenVPN static key
 #
 -----BEGIN OpenVPN Static key V1-----
-233b99368168a30d7e6d72c742cd19c0
-e5ec06ce38c5bd5e0f7be95a301eefb8
-a232def3f54457632d61ff6a88d7ecaa
-ba932832c533d5290fb7edeb97f58314
-b6996ed261a2d2f36dff07e366416d71
-3d1f68dcbfe806e107755f59d37a4631
-a9bec9e5ebfad664e921371c476283bf
-176006b95f1ec57260f9424ffdbcb4d3
-b230bbad67888c192733f87f6076689b
-cf83578af6de86c7ca4b8b6a847326c3
-50c2bb0c7de7b63df38caf2883f14c8b
-c12d51731a4c9ed2d1948ee8bad80cf3
-788bf891f2c90517feeb370684d7cd87
-b4bc66a97b6f7e02ad247aeae7d81c90
-1b707694ddb1ca3dd52253ab0accf53c
-ccbc66cd5beab2d401f1c31630ef1daa
+571a0867b2e8f0e5a1c316522b260d59
+a9fc7348d0cee6c8df6dd8bdb93020f1
+87cf5807c2546dec108e6a1b826dcbcd
+e79ac36aecf1cde9c448938862dde674
+566668a8c4e9ff8ea9dbe712adcf0a81
+a3fc8e56ed8cd9d9b3ae7acdb076f49d
+b31834cc27d29620e850900bca423f0f
+58475567f7ae224a81872483ab916703
+5a9e2ffe7648e98f9abcbabfd8e1815f
+33b7ecbc5e9e4a5211e773d16f78fee4
+4c75adf6c7f87b113e8b9ddfcc7d93e8
+a6e16490d09e230cece1d5b9912c8378
+ab88e1b04476eee3d6a429f1ae745407
+9715211110512f40553105e064697388
+78f2610f6db2f88e7f0d007e28e931bf
+d1b11e8d6f6ef7b6a52c2c838acee6ab
 -----END OpenVPN Static key V1-----
 TAK
 
 cat <<'clientkey' > /etc/openvpn/ckey.key
------BEGIN ENCRYPTED PRIVATE KEY-----
-MIIBSzBOBgkqhkiG9w0BBQ0wQTApBgkqhkiG9w0BBQwwHAQI/elG+FmXq2gCAggA
-MAwGCCqGSIb3DQIJBQAwFAYIKoZIhvcNAwcECOuNsFz8Q6zoBIH4ZadHZcymbqUe
-IiMHL+PIdx+26DqcdWnMCCYORfXhgfq79oNdZxS9pjaCkThWYFXi6URPSLK0F+27
-1bDbO2F6pfst85w0QxpXQNATJ8ENCKtumJ+bJFSCDiJJ/jKA/BBmuUet45vZORtL
-A1ttS7QMdu9mYl0MZsGTWmbZel8ohUaNUEM+rtpgJ2O9eO+gQqpQYsaKTYaVLpTH
-ArBe712Ie8KneSnjmeIYR3oJ1MG6Z299y+tad5rMudXTrqmDgMBGL7vhO3qJMLBP
-mmK40RQC5VAygSxLw8QzhHJpHKqEtu+aLo2NU/TZQfMjDkN/nRzg12+jHPyh+wo=
------END ENCRYPTED PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----
+MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIBY+w1a0q6Q0qKRvDi
+DPVr2b4T2xIq0EqdDpSwd5OzVi/mDGvRAWNJj8TP7ZCz8ZdD79oe/OYnw6omRTFs
+HxpbIcyhgYkDgYYABADPwUGuprxBoG2wIB2RLYRwCQhMKV/kL/Gk6wVG02txkWzz
+JUzVTkhQAGwxZKmDJDhRBB0MkzvPs3RA3iyUUnJgKQBWM8ih2ka4dTn9/Vb2tf/j
++ptdsEPq2qk2VqwX44438VyByqR5Ge5QVLtlQC65oIgZJUGI/IbC7ZM3GEGg/EbE
+2g==
+-----END PRIVATE KEY-----
 clientkey
 
+cat <<'dh' > /etc/openvpn/dh.pem
+-----BEGIN DH PARAMETERS-----
+MIIBCAKCAQEA8Om2VDkLqOBSh6AF638LqhK7z+REPt9KuJzgC4PX75frM24LvKXG
+w5RarYdHbTTcpuvREYiGpwRszjqRzx1BlrDnKoWkTFTLxpGXKJW5I1Rammt1AqSs
+7ILWgDmx5eBpTNOondsNdO+cT11mkVyohLbO11sJXfv7F34PXDxx8LHe7Nf13jFr
+K1kEUW0MoPa5aARxdgQiVXzo4VlgxfX1Z3q0s2PtmiGB0LtYYMQYGYwR6qGK/M4g
+VO1xDGURbRSmOniN18g7+45xq+voRtXHgedLB6Vdv4UYRQdldhBgEvKHm5SR45kn
+HOlq8FVOtFl/z7qiiZqMS5JB2awWAJ8bWwIBAg==
+-----END DH PARAMETERS-----
+dh
+
 cat <<'clientcert' > /etc/openvpn/ccert.crt
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            d2:6c:e9:7a:db:dd:46:ed:27:60:e7:2d:23:e3:af:6c
+        Signature Algorithm: ecdsa-with-SHA512
+        Issuer: CN=FREENET_CAFE
+        Validity
+            Not Before: Apr  7 09:13:41 2022 GMT
+            Not After : Apr  4 09:13:41 2032 GMT
+        Subject: CN=FREENET_USER
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+                Public-Key: (521 bit)
+                pub:
+                    04:00:cf:c1:41:ae:a6:bc:41:a0:6d:b0:20:1d:91:
+                    2d:84:70:09:08:4c:29:5f:e4:2f:f1:a4:eb:05:46:
+                    d3:6b:71:91:6c:f3:25:4c:d5:4e:48:50:00:6c:31:
+                    64:a9:83:24:38:51:04:1d:0c:93:3b:cf:b3:74:40:
+                    de:2c:94:52:72:60:29:00:56:33:c8:a1:da:46:b8:
+                    75:39:fd:fd:56:f6:b5:ff:e3:fa:9b:5d:b0:43:ea:
+                    da:a9:36:56:ac:17:e3:8e:37:f1:5c:81:ca:a4:79:
+                    19:ee:50:54:bb:65:40:2e:b9:a0:88:19:25:41:88:
+                    fc:86:c2:ed:93:37:18:41:a0:fc:46:c4:da
+                ASN1 OID: secp521r1
+                NIST CURVE: P-521
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                14:46:75:93:2C:62:37:2B:40:06:66:F4:12:4F:39:F0:E3:BB:C6:1D
+            X509v3 Authority Key Identifier: 
+                keyid:F5:0A:44:BA:91:C2:A5:31:30:FA:48:76:B0:60:5A:CC:69:96:AA:1C
+                DirName:/CN=FREENET_CAFE
+                serial:14:4B:41:F2:B7:D0:CC:84:C7:79:02:D9:17:A7:D4:9D:8B:2F:E7:08
+
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication
+            X509v3 Key Usage: 
+                Digital Signature
+    Signature Algorithm: ecdsa-with-SHA512
+         30:81:87:02:41:1e:a0:76:b4:5c:b2:15:f1:84:38:c3:5f:2f:
+         4f:16:f4:3d:e0:5a:e9:12:a6:6c:70:59:57:00:ec:e5:21:d1:
+         3d:13:6c:db:1e:11:57:75:9e:81:07:4d:5b:fb:cd:e4:0e:85:
+         9d:da:ef:c5:31:c5:97:25:41:e5:d5:5e:8e:2b:d2:89:02:42:
+         01:c0:54:5c:ba:67:1e:89:66:66:0f:1c:99:c8:9c:ac:5b:a0:
+         2c:3a:d2:b3:95:53:d3:b0:db:20:b9:c3:0e:22:6e:11:ce:a3:
+         82:ea:47:7e:49:65:e9:dd:4b:72:de:fd:32:d2:ca:91:49:1a:
+         c3:06:a7:e8:c4:2b:f0:b9:f3:96:ca:4e
 -----BEGIN CERTIFICATE-----
-MIICWDCCAbmgAwIBAgIQfuFTgOMqfzGuWU2t8XDOVTAKBggqhkjOPQQDAjAXMRUw
-EwYDVQQDDAxGUkVFTkVUX0NBRkUwHhcNMjIwNDA2MTcwOTU1WhcNMjQwNzA5MTcw
-OTU1WjAXMRUwEwYDVQQDDAxGcmVlbmV0X1VzZXIwgZswEAYHKoZIzj0CAQYFK4EE
-ACMDgYYABACF8pTEZM0TR1Hbg8hiJuX+0T2Y1dbK0Ll57S6j4fGkVQhWB/gxoLx1
-B8vtY7Kc4/BQOsf2GNdKm6cJfDxWWSezSAH0FQDpVyzxOvDCyCsLcIOU27J9Z1rY
-zAzNO5dM8lHnTAeJhJ1k9ELMo78jOn0Q6tdnVb7NSkMOHPwbbVeEba89zqOBozCB
-oDAJBgNVHRMEAjAAMB0GA1UdDgQWBBQfhdnuOCHLuldc0qSin5MLlWgQxzBSBgNV
-HSMESzBJgBTgMaGJ1RikhZyI0EvDDFJH3qboQqEbpBkwFzEVMBMGA1UEAwwMRlJF
-RU5FVF9DQUZFghRtmIDWTKVC3X8c9LzTX9Z2HSjCoTATBgNVHSUEDDAKBggrBgEF
-BQcDAjALBgNVHQ8EBAMCB4AwCgYIKoZIzj0EAwIDgYwAMIGIAkIBcJTBeySH/jsz
-jCW+141LiXCMh8wNHWljAys3fcZ+KtYl8F+6ALJhELO8EpmaAH8nGodfj86BcPCy
-vuui5sACAvsCQgEckF07CMYZQG92ML9mWMchEQ/Vc5xLmc4nXkgIor7q0HKRDLF2
-q1/2NGagoxvpQ2q0/FPnwOYwOB3+ldyXcQhAQw==
+MIICWDCCAbqgAwIBAgIRANJs6Xrb3UbtJ2DnLSPjr2wwCgYIKoZIzj0EAwQwFzEV
+MBMGA1UEAwwMRlJFRU5FVF9DQUZFMB4XDTIyMDQwNzA5MTM0MVoXDTMyMDQwNDA5
+MTM0MVowFzEVMBMGA1UEAwwMRlJFRU5FVF9VU0VSMIGbMBAGByqGSM49AgEGBSuB
+BAAjA4GGAAQAz8FBrqa8QaBtsCAdkS2EcAkITClf5C/xpOsFRtNrcZFs8yVM1U5I
+UABsMWSpgyQ4UQQdDJM7z7N0QN4slFJyYCkAVjPIodpGuHU5/f1W9rX/4/qbXbBD
+6tqpNlasF+OON/FcgcqkeRnuUFS7ZUAuuaCIGSVBiPyGwu2TNxhBoPxGxNqjgaMw
+gaAwCQYDVR0TBAIwADAdBgNVHQ4EFgQUFEZ1kyxiNytABmb0Ek858OO7xh0wUgYD
+VR0jBEswSYAU9QpEupHCpTEw+kh2sGBazGmWqhyhG6QZMBcxFTATBgNVBAMMDEZS
+RUVORVRfQ0FGRYIUFEtB8rfQzITHeQLZF6fUnYsv5wgwEwYDVR0lBAwwCgYIKwYB
+BQUHAwIwCwYDVR0PBAQDAgeAMAoGCCqGSM49BAMEA4GLADCBhwJBHqB2tFyyFfGE
+OMNfL08W9D3gWukSpmxwWVcA7OUh0T0TbNseEVd1noEHTVv7zeQOhZ3a78UxxZcl
+QeXVXo4r0okCQgHAVFy6Zx6JZmYPHJnInKxboCw60rOVU9Ow2yC5ww4ibhHOo4Lq
+R35JZendS3Le/TLSypFJGsMGp+jEK/C585bKTg==
 -----END CERTIFICATE-----
 clientcert
-
-cat <<'crl.pem' > /etc/openvpn/crl.pem
------BEGIN X509 CRL-----
-MIIBPDCBngIBATAKBggqhkjOPQQDAjAXMRUwEwYDVQQDDAxGUkVFTkVUX0NBRkUX
-DTIyMDQwNjE2MTA0MVoXDTMyMDQwMzE2MTA0MVqgVjBUMFIGA1UdIwRLMEmAFOAx
-oYnVGKSFnIjQS8MMUkfepuhCoRukGTAXMRUwEwYDVQQDDAxGUkVFTkVUX0NBRkWC
-FG2YgNZMpULdfxz0vNNf1nYdKMKhMAoGCCqGSM49BAMCA4GMADCBiAJCAMpIatVZ
-S58Ws/XNUNX56vd4fTggy4cKuaDxPFMRdfOgYLNIiDS6z6SG9zafDRV+jO4RLM6i
-q24ptqf48RMgmiIBAkIA//4ufNS6nT/eTKfCDbFw3xg3gFKuWd40+HUJ2eE6/3qc
-27LfuYIt3fNstNvbBzXQ28nv3sFdJv5Gn/Gn/rvzscE=
------END X509 CRL-----
-crl.pem
 
  # setting openvpn server port
  sed -i "s|MyOvpnPort1|$OpenVPN_Port1|g" /etc/openvpn/server_tcp.conf
@@ -674,15 +721,18 @@ cat <<EOF152 > /var/www/openvpn/GStories.ovpn
 client
 dev tun
 proto tcp
+explicit-exit-notify
 remote $IPADDR $OpenVPN_Port1
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
-explicit-exit-notify
 resolv-retry infinite
+remote-cert-tls server
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
-remote-cert-tls server
-verify-x509-name FREENET_CAFE name
+auth-user-pass
+mute-replay-warnings
 auth SHA512
 auth-nocache
 cipher AES-128-CBC
@@ -710,7 +760,7 @@ $(cat /etc/openvpn/ccert.crt)
 $(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/tls-crypt.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF152
 
@@ -718,14 +768,18 @@ cat <<EOF16 > /var/www/openvpn/WildRift.ovpn
 client
 dev tun
 proto tcp
-remote $IPADDR $OpenVPN_Port2
 explicit-exit-notify
+remote $IPADDR $OpenVPN_Port2
+remote-cert-tls server
 resolv-retry infinite
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
+auth-user-pass
+mute-replay-warnings
 remote-cert-tls server
-verify-x509-name FREENET_CAFE name
 auth SHA512
 auth-nocache
 cipher AES-128-CBC
@@ -736,11 +790,6 @@ ignore-unknown-option block-outside-dns
 setenv opt block-outside-dns # Prevent Windows 10 DNS leak
 verb 3
 compress lz4-v2
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port2
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -759,7 +808,7 @@ $(cat /etc/openvpn/ccert.crt)
 $(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/tls-crypt.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF16
 
@@ -767,14 +816,18 @@ cat <<EOF18 > /var/www/openvpn/GGames.ovpn
 client
 dev tun
 proto tcp
-remote $IPADDR $OpenVPN_Port1
 explicit-exit-notify
+remote $IPADDR $OpenVPN_Port1
+remote-cert-tls server
 resolv-retry infinite
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
+auth-user-pass
+mute-replay-warnings
 remote-cert-tls server
-verify-x509-name FREENET_CAFE name
 auth SHA512
 auth-nocache
 cipher AES-128-CBC
@@ -803,7 +856,7 @@ $(cat /etc/openvpn/ccert.crt)
 $(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/tls-crypt.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF18
 
@@ -811,14 +864,18 @@ cat <<EOF601 > /var/www/openvpn/GVideo.ovpn
 client
 dev tun
 proto tcp
-remote $IPADDR $OpenVPN_Port1
 explicit-exit-notify
+remote $IPADDR $OpenVPN_Port1
+remote-cert-tls server
 resolv-retry infinite
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
+auth-user-pass
+mute-replay-warnings
 remote-cert-tls server
-verify-x509-name FREENET_CAFE name
 auth SHA512
 auth-nocache
 cipher AES-128-CBC
@@ -847,7 +904,7 @@ $(cat /etc/openvpn/ccert.crt)
 $(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/tls-crypt.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF601
 
@@ -855,14 +912,18 @@ cat <<EOF600 > /var/www/openvpn/GTM.ovpn
 client
 dev tun
 proto tcp
-remote $IPADDR $OpenVPN_Port1
 explicit-exit-notify
+remote $IPADDR $OpenVPN_Port1
+remote-cert-tls server
 resolv-retry infinite
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
+auth-user-pass
+mute-replay-warnings
 remote-cert-tls server
-verify-x509-name FREENET_CAFE name
 auth SHA512
 auth-nocache
 cipher AES-128-CBC
@@ -873,11 +934,6 @@ ignore-unknown-option block-outside-dns
 setenv opt block-outside-dns # Prevent Windows 10 DNS leak
 verb 3
 compress lz4-v2
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -896,7 +952,7 @@ $(cat /etc/openvpn/ccert.crt)
 $(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/tls-crypt.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF600
 
@@ -904,14 +960,18 @@ cat <<EOF160 > /var/www/openvpn/UDP_1194.ovpn
 client
 dev tun
 proto udp
-remote $IPADDR $OpenVPN_Port3
 explicit-exit-notify
+remote $IPADDR $OpenVPN_Port3
+remote-cert-tls server
 resolv-retry infinite
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
+auth-user-pass
+mute-replay-warnings
 remote-cert-tls server
-verify-x509-name FREENET_CAFE name
 auth SHA512
 auth-nocache
 cipher AES-128-CBC
@@ -933,7 +993,7 @@ $(cat /etc/openvpn/ccert.crt)
 $(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/tls-crypt.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF160
 
@@ -941,14 +1001,18 @@ cat <<EOF17 > /var/www/openvpn/UDP_25888.ovpn
 client
 dev tun
 proto udp
-remote $IPADDR $OpenVPN_Port4
 explicit-exit-notify
+remote $IPADDR $OpenVPN_Port4
+remote-cert-tls server
 resolv-retry infinite
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
+auth-user-pass
+mute-replay-warnings
 remote-cert-tls server
-verify-x509-name FREENET_CAFE name
 auth SHA512
 auth-nocache
 cipher AES-128-CBC
@@ -970,7 +1034,7 @@ $(cat /etc/openvpn/ccert.crt)
 $(cat /etc/openvpn/ckey.key)
 </key>
 <tls-crypt>
-$(cat /etc/openvpn/tls-crypt.key)
+$(cat /etc/openvpn/ta.key)
 </tls-crypt>
 EOF17
 
@@ -1168,7 +1232,7 @@ chmod +x /etc/profile.d/juans.sh
  # Turning Off Multi-login Auto Kill
  rm -f /etc/cron.d/set_multilogin_autokill_lib
  
-
+ 
 }
 
 function ScriptMessage(){
