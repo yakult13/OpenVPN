@@ -506,7 +506,48 @@ clientcert
  #wget -qO /etc/openvpn/b.zip 'https://github.com/imaPSYCHO/Parts/raw/main/openvpn_plugin64'
  #unzip -qq /etc/openvpn/b.zip -d /etc/openvpn
  #rm -f /etc/openvpn/b.zip
+ 
+ # Some workaround for OpenVZ machines for "Startup error" openvpn service
+ if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
+ sed -i 's|LimitNPROC|#LimitNPROC|g' /lib/systemd/system/openvpn*
+ systemctl daemon-reload
+fi
 
+ # Allow IPv4 Forwarding
+ echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/20-openvpn.conf && sysctl --system &> /dev/null && echo 1 > /proc/sys/net/ipv4/ip_forward
+
+ # Installing Firewalld
+ apt install firewalld -y
+ systemctl start firewalld
+ systemctl enable firewalld
+ firewall-cmd --quiet --set-default-zone=public
+ firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/tcp
+ firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/udp
+ firewall-cmd --quiet --reload
+ firewall-cmd --quiet --add-masquerade
+ firewall-cmd --quiet --permanent --add-masquerade
+ firewall-cmd --quiet --permanent --add-service=ssh
+ firewall-cmd --quiet --permanent --add-service=openvpn
+ firewall-cmd --quiet --permanent --add-service=http
+ firewall-cmd --quiet --permanent --add-service=https
+ firewall-cmd --quiet --permanent --add-service=privoxy
+ firewall-cmd --quiet --permanent --add-service=squid
+ firewall-cmd --quiet --reload
+ 
+ # Enabling IPv4 Forwarding
+ echo 1 > /proc/sys/net/ipv4/ip_forward
+
+ 
+ # Starting OpenVPN server
+ systemctl start openvpn@server_tcp
+ systemctl start openvpn@server_tcp1
+ systemctl start openvpn@server_udp
+ systemctl start openvpn@server_udp1
+ systemctl enable openvpn@server_tcp
+ systemctl enable openvpn@server_tcp1
+ systemctl enable openvpn@server_udp
+ systemctl enable openvpn@server_udp1
+ 
 }
 
 function InsProxy(){
@@ -622,8 +663,8 @@ group nogroup
 persist-key
 persist-tun
 auth-user-pass
-auth-nocache
 mute-replay-warnings
+auth-nocache
 auth SHA512
 cipher AES-128-CBC
 data-ciphers AES-128-CBC
@@ -660,13 +701,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port2
 resolv-retry infinite
 remote-cert-tls server
+auth-nocache
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
-auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -704,13 +745,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 remote-cert-tls server
+auth-nocache
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
-auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -748,13 +789,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 remote-cert-tls server
+auth-nocache
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
-auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -792,13 +833,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 remote-cert-tls server
+auth-nocache
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
-auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -807,6 +848,7 @@ tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 compress lz4-v2
+
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -836,13 +878,13 @@ proto udp
 remote $IPADDR $OpenVPN_Port3
 resolv-retry infinite
 remote-cert-tls server
+auth-nocache
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
-auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -873,13 +915,13 @@ proto udp
 remote $IPADDR $OpenVPN_Port4
 resolv-retry infinite
 remote-cert-tls server
+auth-nocache
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
-auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -1048,7 +1090,7 @@ EOFSH
  
  # Setting server local time every time this machine reboots
  sed -i "s|MyVPS_Time|$MyVPS_Time|g" /etc/juans/startup.sh
- sed -i "s|IPADD|$IPADDR|g" /etc/juans/startup.sh
+ sed -i "s|IPADD|$MyVPS_Time|g" /etc/juans/startup.sh
  # 
  rm -rf /etc/sysctl.d/99*
 
@@ -1073,6 +1115,10 @@ WantedBy=multi-user.target" > /etc/systemd/system/juans.service
  # Rebooting cron service
  systemctl restart cron
  systemctl enable cron
+ systemctl restart openvpn@server_tcp
+ systemctl restart openvpn@server_tcp1
+ systemctl restart openvpn@server_udp
+ systemctl restart openvpn@server_udp1
  
 }
 
@@ -1187,52 +1233,6 @@ END
 systemctl daemon-reload
 systemctl enable ssht
 systemctl restart ssht
-
- 
- # Some workaround for OpenVZ machines for "Startup error" openvpn service
- if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
- sed -i 's|LimitNPROC|#LimitNPROC|g' /lib/systemd/system/openvpn*
- systemctl daemon-reload
-fi
-
- # Allow IPv4 Forwarding
- echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/20-openvpn.conf && sysctl --system &> /dev/null && echo 1 > /proc/sys/net/ipv4/ip_forward
-
- # Installing Firewalld
- apt install firewalld -y
- systemctl start firewalld
- systemctl enable firewalld
- firewall-cmd --quiet --set-default-zone=public
- firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/tcp
- firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/udp
- firewall-cmd --quiet --reload
- firewall-cmd --quiet --add-masquerade
- firewall-cmd --quiet --permanent --add-masquerade
- firewall-cmd --quiet --permanent --add-service=ssh
- firewall-cmd --quiet --permanent --add-service=openvpn
- firewall-cmd --quiet --permanent --add-service=http
- firewall-cmd --quiet --permanent --add-service=https
- firewall-cmd --quiet --permanent --add-service=privoxy
- firewall-cmd --quiet --permanent --add-service=squid
- firewall-cmd --quiet --reload
- 
- # Enabling IPv4 Forwarding
- echo 1 > /proc/sys/net/ipv4/ip_forward
-
- 
- # Starting OpenVPN server
- systemctl start openvpn@server_tcp
- systemctl start openvpn@server_tcp1
- systemctl start openvpn@server_udp
- systemctl start openvpn@server_udp1
- systemctl enable openvpn@server_tcp
- systemctl enable openvpn@server_tcp1
- systemctl enable openvpn@server_udp
- systemctl enable openvpn@server_udp1
- systemctl restart openvpn@server_tcp
- systemctl restart openvpn@server_tcp1
- systemctl restart openvpn@server_udp
- systemctl restart openvpn@server_udp1
 
  clear
  cd ~
