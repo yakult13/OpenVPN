@@ -203,7 +203,8 @@ dh none
 ecdh-curve secp521r1
 server 172.18.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
-duplicate-cn
+topology subnet
+#duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -219,7 +220,7 @@ mute 20
 explicit-exit-notify 0
 auth SHA512
 cipher AES-128-CBC
-ncp-ciphers AES-128-CBC
+data-ciphers AES-128-CBC
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -240,7 +241,8 @@ dh none
 ecdh-curve secp521r1
 server 172.19.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
-duplicate-cn
+topology subnet
+#duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -256,7 +258,7 @@ mute 20
 explicit-exit-notify 0
 auth SHA512
 cipher AES-128-CBC
-ncp-ciphers AES-128-CBC
+data-ciphers AES-128-CBC
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -277,7 +279,8 @@ dh none
 ecdh-curve secp521r1
 server 172.20.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
-duplicate-cn
+topology subnet
+#duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -293,7 +296,7 @@ mute 20
 explicit-exit-notify 0
 auth SHA512
 cipher AES-128-CBC
-ncp-ciphers AES-128-CBC
+data-ciphers AES-128-CBC
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -314,7 +317,8 @@ dh none
 ecdh-curve secp521r1
 server 172.21.0.0 255.255.0.0
 ifconfig-pool-persist /etc/openvpn/ipp.txt
-duplicate-cn
+topology subnet
+#duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -330,7 +334,7 @@ mute 20
 explicit-exit-notify 0
 auth SHA512
 cipher AES-128-CBC
-ncp-ciphers AES-128-CBC
+data-ciphers AES-128-CBC
 push "redirect-gateway def1"
 socket-flags TCP_NODELAY
 push "socket-flags TCP_NODELAY"
@@ -475,55 +479,6 @@ Dg==
 clientkey
 
 cat <<'clientcert' > /etc/openvpn/ccert.crt
-Certificate:
-    Data:
-        Version: 3 (0x2)
-        Serial Number:
-            10:8e:cf:41:ae:85:a9:1f:90:2f:22:8f:41:e3:a2:e0
-        Signature Algorithm: ecdsa-with-SHA512
-        Issuer: CN=FREENET_CAFE
-        Validity
-            Not Before: Apr  8 05:56:45 2022 GMT
-            Not After : Apr  5 05:56:45 2032 GMT
-        Subject: CN=FREENET_CAFE_USER
-        Subject Public Key Info:
-            Public Key Algorithm: id-ecPublicKey
-                Public-Key: (521 bit)
-                pub:
-                    04:01:c9:05:54:3b:1b:33:3f:89:17:d4:32:e4:6c:
-                    07:4f:90:43:fc:b7:15:be:78:15:97:3c:f5:43:b2:
-                    1c:fc:25:3b:fa:e2:ab:0d:6c:67:b4:0d:bb:9b:12:
-                    ab:c4:52:82:eb:6b:6f:03:47:36:3f:16:f8:fc:83:
-                    ff:ba:74:de:75:29:e2:00:c8:74:f3:8e:9e:38:df:
-                    c9:3f:e1:7d:77:44:7c:a1:44:98:c6:48:00:13:dd:
-                    a1:c2:44:97:bc:cc:fb:f2:c4:d5:33:b8:e7:8c:60:
-                    81:60:5e:f2:e0:05:d2:84:34:e5:de:6b:34:aa:d0:
-                    83:d4:f4:06:f3:46:9b:59:9e:2b:33:4a:0e
-                ASN1 OID: secp521r1
-                NIST CURVE: P-521
-        X509v3 extensions:
-            X509v3 Basic Constraints: 
-                CA:FALSE
-            X509v3 Subject Key Identifier: 
-                82:CE:C1:B1:9D:83:70:7F:FE:22:67:B8:3B:8F:71:0A:61:79:5D:90
-            X509v3 Authority Key Identifier: 
-                keyid:CA:BC:3A:08:A4:29:84:14:F9:36:A2:04:22:23:A7:D8:75:6C:F5:E3
-                DirName:/CN=FREENET_CAFE
-                serial:5C:12:B2:30:B4:05:46:2D:B1:81:15:BC:6C:0E:48:84:F2:E6:C4:85
-
-            X509v3 Extended Key Usage: 
-                TLS Web Client Authentication
-            X509v3 Key Usage: 
-                Digital Signature
-    Signature Algorithm: ecdsa-with-SHA512
-         30:81:87:02:42:01:52:ab:a2:14:e2:10:dc:e5:0b:53:9a:63:
-         5c:20:8b:39:c7:dd:d9:82:07:82:ae:9c:2e:b4:77:13:ae:c7:
-         51:96:61:46:e1:3c:00:10:d1:ac:50:af:c8:a5:2c:e0:27:27:
-         91:8a:22:3d:21:e5:4a:ef:e1:01:09:f7:21:65:7e:30:97:02:
-         41:66:cb:81:8d:b0:0b:72:f3:af:6c:91:e7:1d:34:4a:7d:3f:
-         e5:89:e1:d3:68:60:33:5c:5e:b3:ef:46:0b:56:18:1a:f6:0f:
-         8a:fa:ed:f2:c0:31:2a:3f:00:c0:5f:94:05:72:21:5b:d1:dc:
-         1a:75:60:dd:58:da:47:af:44:6b:27:31
 -----BEGIN CERTIFICATE-----
 MIICXDCCAb6gAwIBAgIQEI7PQa6FqR+QLyKPQeOi4DAKBggqhkjOPQQDBDAXMRUw
 EwYDVQQDDAxGUkVFTkVUX0NBRkUwHhcNMjIwNDA4MDU1NjQ1WhcNMzIwNDA1MDU1
@@ -661,18 +616,18 @@ mySquid
  sed -i "s|SquidCacheHelper|$Proxy_Port1|g" /etc/squid/squid.conf
  sed -i "s|SquidCacheHelper|$Proxy_Port2|g" /etc/squid/squid.conf
 
-sudo apt install ziproxy
- cat <<myziproxy > /etc/ziproxy/ziproxy.conf
- Port = 2898
- UseContentLength = false
- ImageQuality = {30,25,25,20}
-myziproxy
+#sudo apt install ziproxy
+# cat <<myziproxy > /etc/ziproxy/ziproxy.conf
+# Port = 2898
+# UseContentLength = false
+ #ImageQuality = {30,25,25,20}
+#myziproxy
 
  # Starting Proxy server
  echo -e "Restarting proxy server.."
  systemctl restart privoxy
  systemctl restart squid
- systemctl restart ziproxy
+# systemctl restart ziproxy
 }
 
 function OvpnConfigs(){
@@ -703,7 +658,6 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
-http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 resolv-retry infinite
 remote-cert-tls server
 nobind
@@ -713,19 +667,16 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
+topology subnet
 auth SHA512
 cipher AES-128-CBC
-ncp-ciphers AES-128-CBC
+data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 mute 20
 compress lz4-v2
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
+http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
 http-proxy-option CUSTOM-HEADER Host vt.tiktok.com
@@ -752,8 +703,9 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port2
-remote-cert-tls server
 resolv-retry infinite
+remote-cert-tls server
+topology subnet
 nobind
 user nobody
 group nogroup
@@ -761,19 +713,14 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
-remote-cert-tls server
-auth sha512
-cipher AES-256-GCM
+auth SHA512
+cipher AES-128-CBC
+data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 mute 20
-compress lz4
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
+compress lz4-v2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port2
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -801,8 +748,9 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
-remote-cert-tls server
 resolv-retry infinite
+remote-cert-tls server
+topology subnet
 nobind
 user nobody
 group nogroup
@@ -810,19 +758,14 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
-remote-cert-tls server
-auth sha512
-cipher AES-256-GCM
+auth SHA512
+cipher AES-128-CBC
+data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 mute 20
-compress lz4
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
+compress lz4-v2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -850,8 +793,9 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
-remote-cert-tls server
 resolv-retry infinite
+remote-cert-tls server
+topology subnet
 nobind
 user nobody
 group nogroup
@@ -859,19 +803,14 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
-remote-cert-tls server
-auth sha512
-cipher AES-256-GCM
+auth SHA512
+cipher AES-128-CBC
+data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 mute 20
-compress lz4
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
+compress lz4-v2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -899,8 +838,9 @@ client
 dev tun
 proto tcp
 remote $IPADDR $OpenVPN_Port1
-remote-cert-tls server
 resolv-retry infinite
+remote-cert-tls server
+topology subnet
 nobind
 user nobody
 group nogroup
@@ -908,19 +848,15 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
-remote-cert-tls server
-auth sha512
-cipher AES-256-GCM
+auth SHA512
+cipher AES-128-CBC
+data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 mute 20
-compress lz4
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
+compress lz4-v2
+
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -948,8 +884,9 @@ client
 dev tun
 proto udp
 remote $IPADDR $OpenVPN_Port3
-remote-cert-tls server
 resolv-retry infinite
+remote-cert-tls server
+topology subnet
 nobind
 user nobody
 group nogroup
@@ -957,19 +894,14 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
-remote-cert-tls server
-auth sha512
-cipher AES-256-GCM
+auth SHA512
+cipher AES-128-CBC
+data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 mute 20
-compress lz4
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
+compress lz4-v2
 
 <ca>
 $(cat /etc/openvpn/ca.crt)
@@ -990,8 +922,9 @@ client
 dev tun
 proto udp
 remote $IPADDR $OpenVPN_Port4
-remote-cert-tls server
 resolv-retry infinite
+remote-cert-tls server
+topology subnet
 nobind
 user nobody
 group nogroup
@@ -999,19 +932,14 @@ persist-key
 persist-tun
 auth-user-pass
 mute-replay-warnings
-remote-cert-tls server
-auth sha512
-cipher AES-256-GCM
+auth SHA512
+cipher AES-128-CBC
+data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
 mute 20
-compress lz4
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
+compress lz4-v2
 
 <ca>
 $(cat /etc/openvpn/ca.crt)
@@ -1136,16 +1064,16 @@ function ConfStartup(){
      crontab -l > mycron
      #echo new cron into cron file
      echo -e "0 3 * * * /sbin/reboot >/dev/null 2>&1" >> mycron
-     echo -e "*/1 * * * * sudo service ziproxy restart" >> mycron
+    # echo -e "*/1 * * * * sudo service ziproxy restart" >> mycron
      echo -e "0 */1 * * * /sbin/sysctl -p >/dev/null 2>&1" >> mycron
-     echo -e "0 */1 * * * sysctl -p" >> mycron
+    # echo -e "0 */1 * * * sysctl -p" >> mycron
      #install new cron file
      crontab mycron
      service cron restart
      echo '0 3 * * * /sbin/reboot >/dev/null 2>&1' >> /etc/cron.d/mycron
-     echo '*/1 * * * * sudo service ziproxy restart' >> /etc/cron.d/mycron
+    # echo '*/1 * * * * sudo service ziproxy restart' >> /etc/cron.d/mycron
      echo '0 */1 * * * /sbin/sysctl -p >/dev/null 2>&1' >> /etc/cron.d/mycron
-     echo '0 */1 * * * sysctl -p' >> mycron
+    # echo '0 */1 * * * sysctl -p' >> mycron
 
  # Creating directory for startup script
  rm -rf /etc/juans
@@ -1162,10 +1090,8 @@ ln -fs /usr/share/zoneinfo/MyVPS_Time /etc/localtime
 export DEBIAN_FRONTEND=noninteractive
 
 # Allowing ALL TCP ports for our machine (Simple workaround for policy-based VPS)
-iptables -A INPUT -s $(wget -4qO- http://ipinfo.io/ip) -p tcp -m multiport --dport 1:65535 -j ACCEPT
-
-# Allowing OpenVPN to Forward traffic
-/bin/bash /etc/openvpn/openvpn.bash
+iptables -A INPUT -s $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) -p tcp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -s $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) -p udp -m multiport --dport 1:65535 -j ACCEPT
 
 # Deleting Expired SSH Accounts
 /usr/local/sbin/delete_expired &> /dev/null
@@ -1186,7 +1112,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash /etc/juans/startup.sh
+ExecStart=/etc/juans/startup.sh /bin/bash 
 RemainAfterExit=yes
 
 [Install]
@@ -1207,7 +1133,7 @@ echo -e " Creating Menu scripts.."
 
 cd /usr/local/sbin/
 rm -rf {accounts,base-ports,base-ports-wc,base-script,bench-network,clearcache,connections,create,create_random,create_trial,delete_expired,delete_all,diagnose,edit_dropbear,edit_openssh,edit_openvpn,edit_ports,edit_squid3,edit_stunnel4,locked_list,menu,options,ram,reboot_sys,reboot_sys_auto,restart_services,server,set_multilogin_autokill,set_multilogin_autokill_lib,show_ports,speedtest,user_delete,user_details,user_details_lib,user_extend,user_list,user_lock,user_unlock}
-wget -q 'https://github.com/yue0706/parte/raw/main/fixed1.zip'
+wget -q 'https://github.com/yakult13/parte/raw/main/fixed1.zip'
 unzip -qq fixed1.zip
 rm -f fixed1.zip
 chmod +x ./*
@@ -1225,10 +1151,10 @@ chmod +x /etc/profile.d/juans.sh
  rm -f /etc/cron.d/set_multilogin_autokill_lib
  
  # removing and installing sysctl.conf for bbr installation
- rm -f /etc/sysctl.conf
- wget -q https://github.com/yue0706/parte/raw/main/sysctl.conf
- chmod -R 777 sysctl.conf
- mv sysctl.conf /etc/
+# rm -f /etc/sysctl.conf
+# wget -q https://github.com/yakult13/parte/raw/main/sysctl.conf
+# chmod -R 777 sysctl.conf
+# mv sysctl.conf /etc/
  
 }
 
