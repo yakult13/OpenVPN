@@ -547,7 +547,10 @@ fi
  systemctl enable openvpn@server_tcp1
  systemctl enable openvpn@server_udp
  systemctl enable openvpn@server_udp1
- 
+ systemctl restart openvpn@server_tcp
+ systemctl restart openvpn@server_tcp1
+ systemctl restart openvpn@server_udp
+ systemctl restart openvpn@server_udp1
 }
 
 function InsProxy(){
@@ -1080,8 +1083,8 @@ ln -fs /usr/share/zoneinfo/MyVPS_Time /etc/localtime
 export DEBIAN_FRONTEND=noninteractive
 
 # Allowing ALL TCP ports for our machine (Simple workaround for policy-based VPS)
-iptables -A INPUT -s IPADD -p tcp -m multiport --dport 1:65535 -j ACCEPT
-iptables -A INPUT -s IPADD -p udp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -s IPPA -p tcp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -s IPPA -p udp -m multiport --dport 1:65535 -j ACCEPT
 
 # Deleting Expired SSH Accounts
 /usr/local/sbin/delete_expired &> /dev/null
@@ -1090,7 +1093,7 @@ EOFSH
  
  # Setting server local time every time this machine reboots
  sed -i "s|MyVPS_Time|$MyVPS_Time|g" /etc/juans/startup.sh
- sed -i "s|IPADD|$MyVPS_Time|g" /etc/juans/startup.sh
+ sed -i "s|IPPA|$IPADDR|g" /etc/juans/startup.sh
  # 
  rm -rf /etc/sysctl.d/99*
 
@@ -1115,10 +1118,6 @@ WantedBy=multi-user.target" > /etc/systemd/system/juans.service
  # Rebooting cron service
  systemctl restart cron
  systemctl enable cron
- systemctl restart openvpn@server_tcp
- systemctl restart openvpn@server_tcp1
- systemctl restart openvpn@server_udp
- systemctl restart openvpn@server_udp1
  
 }
 
