@@ -202,9 +202,9 @@ key server.key
 dh none
 ecdh-curve secp521r1
 server 172.18.0.0 255.255.0.0
-ifconfig-pool-persist /etc/openvpn/ipp.txt
+#ifconfig-pool-persist /etc/openvpn/ipp.txt
 topology subnet
-#duplicate-cn
+duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -240,9 +240,9 @@ key server.key
 dh none
 ecdh-curve secp521r1
 server 172.19.0.0 255.255.0.0
-ifconfig-pool-persist /etc/openvpn/ipp.txt
+#ifconfig-pool-persist /etc/openvpn/ipp.txt
 topology subnet
-#duplicate-cn
+duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -278,9 +278,9 @@ key server.key
 dh none
 ecdh-curve secp521r1
 server 172.20.0.0 255.255.0.0
-ifconfig-pool-persist /etc/openvpn/ipp.txt
+#ifconfig-pool-persist /etc/openvpn/ipp.txt
 topology subnet
-#duplicate-cn
+duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -316,9 +316,9 @@ key server.key
 dh none
 ecdh-curve secp521r1
 server 172.21.0.0 255.255.0.0
-ifconfig-pool-persist /etc/openvpn/ipp.txt
+#ifconfig-pool-persist /etc/openvpn/ipp.txt
 topology subnet
-#duplicate-cn
+duplicate-cn
 keepalive 10 120
 tls-crypt ta.key
 compress lz4-v2
@@ -506,51 +506,7 @@ clientcert
  #wget -qO /etc/openvpn/b.zip 'https://github.com/imaPSYCHO/Parts/raw/main/openvpn_plugin64'
  #unzip -qq /etc/openvpn/b.zip -d /etc/openvpn
  #rm -f /etc/openvpn/b.zip
- 
- # Some workaround for OpenVZ machines for "Startup error" openvpn service
- if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
- sed -i 's|LimitNPROC|#LimitNPROC|g' /lib/systemd/system/openvpn*
- systemctl daemon-reload
-fi
 
- # Allow IPv4 Forwarding
- echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/20-openvpn.conf && sysctl --system &> /dev/null && echo 1 > /proc/sys/net/ipv4/ip_forward
-
- # Installing Firewalld
- apt install firewalld -y
- systemctl start firewalld
- systemctl enable firewalld
- firewall-cmd --quiet --set-default-zone=public
- firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/tcp
- firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/udp
- firewall-cmd --quiet --reload
- firewall-cmd --quiet --add-masquerade
- firewall-cmd --quiet --permanent --add-masquerade
- firewall-cmd --quiet --permanent --add-service=ssh
- firewall-cmd --quiet --permanent --add-service=openvpn
- firewall-cmd --quiet --permanent --add-service=http
- firewall-cmd --quiet --permanent --add-service=https
- firewall-cmd --quiet --permanent --add-service=privoxy
- firewall-cmd --quiet --permanent --add-service=squid
- firewall-cmd --quiet --reload
- 
- # Enabling IPv4 Forwarding
- echo 1 > /proc/sys/net/ipv4/ip_forward
-
- 
- # Starting OpenVPN server
- systemctl start openvpn@server_tcp
- systemctl start openvpn@server_tcp1
- systemctl start openvpn@server_udp
- systemctl start openvpn@server_udp1
- systemctl enable openvpn@server_tcp
- systemctl enable openvpn@server_tcp1
- systemctl enable openvpn@server_udp
- systemctl enable openvpn@server_udp1
- systemctl restart openvpn@server_tcp
- systemctl restart openvpn@server_tcp1
- systemctl restart openvpn@server_udp
- systemctl restart openvpn@server_udp1
 }
 
 function InsProxy(){
@@ -666,15 +622,14 @@ group nogroup
 persist-key
 persist-tun
 auth-user-pass
+auth-nocache
 mute-replay-warnings
-topology subnet
 auth SHA512
 cipher AES-128-CBC
 data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
-mute 20
 compress lz4-v2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
@@ -705,13 +660,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port2
 resolv-retry infinite
 remote-cert-tls server
-topology subnet
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
+auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -719,7 +674,6 @@ data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
-mute 20
 compress lz4-v2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port2
 http-proxy-option AGENT Chrome/80.0.3987.87
@@ -750,13 +704,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 remote-cert-tls server
-topology subnet
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
+auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -764,7 +718,6 @@ data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
-mute 20
 compress lz4-v2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
@@ -795,13 +748,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 remote-cert-tls server
-topology subnet
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
+auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -809,7 +762,6 @@ data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
-mute 20
 compress lz4-v2
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
@@ -840,13 +792,13 @@ proto tcp
 remote $IPADDR $OpenVPN_Port1
 resolv-retry infinite
 remote-cert-tls server
-topology subnet
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
+auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -854,9 +806,7 @@ data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
-mute 20
 compress lz4-v2
-
 http-proxy $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) $Proxy_Port1
 http-proxy-option AGENT Chrome/80.0.3987.87
 http-proxy-option CUSTOM-HEADER CONNECT HTTP/1.0
@@ -886,13 +836,13 @@ proto udp
 remote $IPADDR $OpenVPN_Port3
 resolv-retry infinite
 remote-cert-tls server
-topology subnet
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
+auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -900,7 +850,6 @@ data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
-mute 20
 compress lz4-v2
 
 <ca>
@@ -924,13 +873,13 @@ proto udp
 remote $IPADDR $OpenVPN_Port4
 resolv-retry infinite
 remote-cert-tls server
-topology subnet
 nobind
 user nobody
 group nogroup
 persist-key
 persist-tun
 auth-user-pass
+auth-nocache
 mute-replay-warnings
 auth SHA512
 cipher AES-128-CBC
@@ -938,7 +887,6 @@ data-ciphers AES-128-CBC
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 tls-client
 verb 3
-mute 20
 compress lz4-v2
 
 <ca>
@@ -1073,7 +1021,7 @@ function ConfStartup(){
      echo '0 3 * * * /sbin/reboot >/dev/null 2>&1' >> /etc/cron.d/mycron
     # echo '*/1 * * * * sudo service ziproxy restart' >> /etc/cron.d/mycron
      echo '0 */1 * * * /sbin/sysctl -p >/dev/null 2>&1' >> /etc/cron.d/mycron
-    # echo '0 */1 * * * sysctl -p' >> mycron
+     echo '0 */1 * * * sysctl -p' >> mycron
 
  # Creating directory for startup script
  rm -rf /etc/juans
@@ -1090,8 +1038,8 @@ ln -fs /usr/share/zoneinfo/MyVPS_Time /etc/localtime
 export DEBIAN_FRONTEND=noninteractive
 
 # Allowing ALL TCP ports for our machine (Simple workaround for policy-based VPS)
-iptables -A INPUT -s $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) -p tcp -m multiport --dport 1:65535 -j ACCEPT
-iptables -A INPUT -s $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) -p udp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -s IPADD -p tcp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -s IPADD -p udp -m multiport --dport 1:65535 -j ACCEPT
 
 # Deleting Expired SSH Accounts
 /usr/local/sbin/delete_expired &> /dev/null
@@ -1100,7 +1048,7 @@ EOFSH
  
  # Setting server local time every time this machine reboots
  sed -i "s|MyVPS_Time|$MyVPS_Time|g" /etc/juans/startup.sh
-
+ sed -i "s|IPADD|$IPADDR|g" /etc/juans/startup.sh
  # 
  rm -rf /etc/sysctl.d/99*
 
@@ -1239,6 +1187,52 @@ END
 systemctl daemon-reload
 systemctl enable ssht
 systemctl restart ssht
+
+ 
+ # Some workaround for OpenVZ machines for "Startup error" openvpn service
+ if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
+ sed -i 's|LimitNPROC|#LimitNPROC|g' /lib/systemd/system/openvpn*
+ systemctl daemon-reload
+fi
+
+ # Allow IPv4 Forwarding
+ echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/20-openvpn.conf && sysctl --system &> /dev/null && echo 1 > /proc/sys/net/ipv4/ip_forward
+
+ # Installing Firewalld
+ apt install firewalld -y
+ systemctl start firewalld
+ systemctl enable firewalld
+ firewall-cmd --quiet --set-default-zone=public
+ firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/tcp
+ firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/udp
+ firewall-cmd --quiet --reload
+ firewall-cmd --quiet --add-masquerade
+ firewall-cmd --quiet --permanent --add-masquerade
+ firewall-cmd --quiet --permanent --add-service=ssh
+ firewall-cmd --quiet --permanent --add-service=openvpn
+ firewall-cmd --quiet --permanent --add-service=http
+ firewall-cmd --quiet --permanent --add-service=https
+ firewall-cmd --quiet --permanent --add-service=privoxy
+ firewall-cmd --quiet --permanent --add-service=squid
+ firewall-cmd --quiet --reload
+ 
+ # Enabling IPv4 Forwarding
+ echo 1 > /proc/sys/net/ipv4/ip_forward
+
+ 
+ # Starting OpenVPN server
+ systemctl start openvpn@server_tcp
+ systemctl start openvpn@server_tcp1
+ systemctl start openvpn@server_udp
+ systemctl start openvpn@server_udp1
+ systemctl enable openvpn@server_tcp
+ systemctl enable openvpn@server_tcp1
+ systemctl enable openvpn@server_udp
+ systemctl enable openvpn@server_udp1
+ systemctl restart openvpn@server_tcp
+ systemctl restart openvpn@server_tcp1
+ systemctl restart openvpn@server_udp
+ systemctl restart openvpn@server_udp1
 
  clear
  cd ~
