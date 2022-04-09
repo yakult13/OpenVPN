@@ -8,6 +8,9 @@
 export SSH_Port='225'
 export OVPN_TCP_Port='110'
 export OVPN_UDP_Port='1194'
+export OVPN_TCP_CIDR='172.18.16.0/20'
+export OVPN_UDP_CIDR='172.18.32.0/20'
+export OVPN_CIDR_BASE='172.18.0.0/16'
 export SSL_SSH_Port='443'
 export SSL_OVPN_Port='421'
 export Proxy_Port1='8010'
@@ -109,6 +112,9 @@ EOF
  rm -rf {/usr/bin/ffsend,/usr/local/bin/ffsend}
  screen -S ffsendinstall -dm bash -c "curl -4skL 'https://github.com/timvisee/ffsend/releases/download/v0.2.74/ffsend-v0.2.74-linux-x64-static' -o /usr/bin/ffsend && chmod a+x /usr/bin/ffsend"
 
+ # (for openvpn) submask gen script
+ curlapi -s -o /usr/local/sbin/fcafe-submask "https://raw.githubusercontent.com/${RepoURL}/bin/submask"
+ chmod +x /usr/local/sbin/fcafe-submask
 }
 
 OpenSSH(){
@@ -131,6 +137,28 @@ OpenSSH(){
  systemctl daemon-reload
  systemctl start badvpn-udpgw 2>/dev/null
  systemctl enable badvpn-udpgw &>/dev/null
+}
+
+OpenVPN(){
+ OVPN_Name_lc="$(echo ${OVPN_Name}|tr '[:upper:]' '[:lower:]')"
+ local a="/usr/local/sbin/fcafe-submask"
+ rm -rf /etc/${OVPN_Name_lc}/*
+ curlapi -s -o ovpninstall "https://raw.githubusercontent.com/${RepoURL}/bin/ovpninstall-${ID}"
+ chmod +x ovpninstall
+ ./ovpninstall && rm -f ovpninstall
+ for PORT in "${OVPN_TCP_Port}" "${OVPN_UDP_Port}"; do { [ ! -z "$(lsof -ti:${PORT} -s tcp:listen)" ] && kill $(lsof -ti:${PORT}); }; done
+
+ # Enter mod here
+ if [[ -e "${a}" ]]; then
+ sed -i "s|\(^port\s\).\+|\1${OVPN_TCP_Port}|;s|\(^server\s\).\+|\1$(echo ${OVPN_TCP_CIDR}|cut -d '/' -f1) $(${a} -s $(echo ${OVPN_TCP_CIDR}|cut -d '/' -f2))|" "/etc/${OVPN_Name_lc}/tcp.conf"
+ sed -i "s|\(^port\s\).\+|\1${OVPN_UDP_Port}|;s|\(^server\s\).\+|\1$(echo ${OVPN_UDP_CIDR}|cut -d '/' -f1) $(${a} -s $(echo ${OVPN_UDP_CIDR}|cut -d '/' -f2))|" "/etc/${OVPN_Name_lc}/udp.conf"
+ fi
+
+ systemctl daemon-reload
+ systemctl start ${OVPN_Name_lc}-server@tcp.service
+ systemctl enable ${OVPN_Name_lc}-server@tcp.service &>/dev/null
+ systemctl start ${OVPN_Name_lc}-server@udp.service
+ systemctl enable ${OVPN_Name_lc}-server@udp.service &>/dev/null
 }
 
 Stunnel(){
@@ -231,329 +259,29 @@ Wsproxy(){
  systemctl start wsproxy-ssh wsproxy-ovpn
 }
 
-TEST(){
- echo "deb http://build.openvpn.net/debian/openvpn/stable $(lsb_release -sc) main" >/etc/apt/sources.list.d/openvpn.list && apt-key del E158C569 && wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
- wget -qO security-openvpn-net.asc "https://keys.openpgp.org/vks/v1/by-fingerprint/F554A3687412CFFEBDEFE0A312F5F7B42F2B01E7" && gpg --import security-openvpn-net.asc
- apt-get update -y
- apt-get install openvpn -y
-
-  if [[ ! -e /etc/openvpn ]]; then
-  mkdir -p /etc/openvpn
+FixNoInternet(){
+ if [[ "$(command -v systemd-resolve)" ]]; then
+  if [[ "$(systemctl is-active systemd-resolved)" == 'active' ]]; then
+  systemctl stop systemd-resolved.service
+  systemctl disable systemd-resolved.service &>/dev/null
+   if [[ -e /run/systemd/resolve/resolv.conf ]]; then
+   cat /run/systemd/resolve/resolv.conf > /etc/resolv.conf
+   else
+  echo 'nameserver 1.1.1.1' > /etc/resolv.conf
+   fi
+  fi
  fi
-
-  cat <<'VPN1' > /etc/openvpn/server_tcp.conf
-port 110
-proto tcp
-dev tun
-ca ca.crt
-cert server.crt
-key server.key
-dh none
-ecdh-curve secp521r1
-server 172.18.0.0 255.255.0.0
-#ifconfig-pool-persist /etc/openvpn/ipp.txt
-topology subnet
-duplicate-cn
-keepalive 10 120
-tls-crypt ta.key
-compress lz4-v2
-max-clients 4000
-user nobody
-group nogroup
-persist-key
-persist-tun
-status /etc/openvpn/openvpn-status.log
-log /etc/openvpn/openvpn.log
-verb 3
-mute 20
-explicit-exit-notify 0
-auth SHA512
-cipher AES-128-CBC
-data-ciphers AES-128-CBC
-push "redirect-gateway def1"
-socket-flags TCP_NODELAY
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
-VPN1
-
-cat <<'VPN2' > /etc/openvpn/server_udp.conf
-port 1194
-proto udp
-dev tun
-ca ca.crt
-cert server.crt
-key server.key
-dh none
-ecdh-curve secp521r1
-server 172.19.0.0 255.255.0.0
-#ifconfig-pool-persist /etc/openvpn/ipp.txt
-topology subnet
-duplicate-cn
-keepalive 10 120
-tls-crypt ta.key
-compress lz4-v2
-max-clients 4000
-user nobody
-group nogroup
-persist-key
-persist-tun
-status /etc/openvpn/openvpn-status.log
-log /etc/openvpn/openvpn.log
-verb 3
-mute 20
-explicit-exit-notify 0
-auth SHA512
-cipher AES-128-CBC
-data-ciphers AES-128-CBC
-push "redirect-gateway def1"
-socket-flags TCP_NODELAY
-push "socket-flags TCP_NODELAY"
-push "dhcp-option DNS 1.0.0.1"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 8.8.4.4"
-push "dhcp-option DNS 8.8.8.8"
-VPN2
-
-cat <<'CERT'> /etc/openvpn/ca.crt
------BEGIN CERTIFICATE-----
-MIICSjCCAaugAwIBAgIUXBKyMLQFRi2xgRW8bA5IhPLmxIUwCgYIKoZIzj0EAwQw
-FzEVMBMGA1UEAwwMRlJFRU5FVF9DQUZFMB4XDTIyMDQwODA1NDk1NloXDTMyMDQw
-NTA1NDk1NlowFzEVMBMGA1UEAwwMRlJFRU5FVF9DQUZFMIGbMBAGByqGSM49AgEG
-BSuBBAAjA4GGAAQBpVVl4ORXtCLhppUCStPrH35xUYoC/f2/gkreXdzEnX3Dxudv
-b9YjEU47fBi2iwMHycUB4YhdB3UJ5EwGWkEwKWkARNRP1fXkm8PRwesy4mvMQ4XT
-6wp5QwVCoCynxsoKXRBnBqvyPm7WNcF0CAjsN7PgTqUmsNERUfcOY4FNLoGrLkaj
-gZEwgY4wHQYDVR0OBBYEFMq8OgikKYQU+TaiBCIjp9h1bPXjMFIGA1UdIwRLMEmA
-FMq8OgikKYQU+TaiBCIjp9h1bPXjoRukGTAXMRUwEwYDVQQDDAxGUkVFTkVUX0NB
-RkWCFFwSsjC0BUYtsYEVvGwOSITy5sSFMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQD
-AgEGMAoGCCqGSM49BAMEA4GMADCBiAJCATiPdDgZzWiTg191uGzHjsCLeed9LLbb
-+THaanlKhMF0iEWfZ98nhemfQBKrvZp5oTdZr09kJuSst7CGxUA1uUvxAkIBWtUw
-ej+PNaq6m4OnOHx2EcGIAkLpNasKkXpXBw1NiUXrz71928VwOy7dYmtIQg0e5tN8
-D9TSraO/bgisNjXcnu4=
------END CERTIFICATE-----
-CERT
-
- cat <<'SCERT'> /etc/openvpn/server.crt
-Certificate:
-    Data:
-        Version: 3 (0x2)
-        Serial Number:
-            2f:a5:59:52:f8:8f:94:7d:74:c4:09:6c:8c:7a:99:be
-        Signature Algorithm: ecdsa-with-SHA512
-        Issuer: CN=FREENET_CAFE
-        Validity
-            Not Before: Apr  8 05:52:21 2022 GMT
-            Not After : Apr  5 05:52:21 2032 GMT
-        Subject: CN=FREENET_CAFE
-        Subject Public Key Info:
-            Public Key Algorithm: id-ecPublicKey
-                Public-Key: (521 bit)
-                pub:
-                    04:01:ac:19:a5:48:05:38:75:cd:ef:67:8a:32:22:
-                    09:7d:85:74:5f:e7:dc:94:4f:c7:a2:35:62:c0:2c:
-                    ea:67:e6:e4:5c:60:8f:e0:11:83:6b:98:df:a0:8b:
-                    53:99:5f:70:e4:02:49:30:59:e9:b3:cb:08:e3:24:
-                    d8:ca:99:cb:1e:27:66:00:1f:54:fe:0e:e0:4a:83:
-                    87:7d:70:5a:cb:be:59:c0:73:48:25:0f:0c:b2:6d:
-                    58:4a:59:67:64:45:13:4f:e7:92:2a:6b:a7:ae:10:
-                    8a:6f:08:f0:db:6d:f7:8c:65:26:18:e8:89:10:6c:
-                    37:84:38:52:37:6c:3c:44:fe:25:ab:d9:72
-                ASN1 OID: secp521r1
-                NIST CURVE: P-521
-        X509v3 extensions:
-            X509v3 Basic Constraints: 
-                CA:FALSE
-            X509v3 Subject Key Identifier: 
-                BF:B2:36:F3:C3:B3:0C:FB:89:DC:C9:2B:E3:F0:F7:D9:B7:E7:27:61
-            X509v3 Authority Key Identifier: 
-                keyid:CA:BC:3A:08:A4:29:84:14:F9:36:A2:04:22:23:A7:D8:75:6C:F5:E3
-                DirName:/CN=FREENET_CAFE
-                serial:5C:12:B2:30:B4:05:46:2D:B1:81:15:BC:6C:0E:48:84:F2:E6:C4:85
-            X509v3 Extended Key Usage: 
-                TLS Web Server Authentication
-            X509v3 Key Usage: 
-                Digital Signature, Key Encipherment
-            X509v3 Subject Alternative Name: 
-                DNS:FREENET_CAFE
-    Signature Algorithm: ecdsa-with-SHA512
-         30:81:88:02:42:01:b1:52:bc:84:b3:f3:82:28:51:d2:97:4a:
-         10:be:df:98:49:06:72:0c:34:40:16:fd:96:e0:79:d6:c7:32:
-         e7:f8:61:50:d6:6c:87:3f:19:d9:aa:1e:46:90:04:4a:89:b7:
-         0d:07:18:49:23:dc:24:c0:1e:ab:4b:60:fa:9b:07:a6:8c:02:
-         42:01:82:f1:7e:37:82:54:34:05:43:d0:79:d5:05:a7:43:86:
-         88:28:b0:96:75:40:0c:13:90:da:65:5e:c0:5a:da:67:f5:47:
-         0c:64:86:e4:fa:02:17:5a:1d:1b:35:6c:0b:94:0a:50:53:fc:
-         e1:7b:09:a9:b1:07:6c:e3:d7:ea:8b:1f:f2
------BEGIN CERTIFICATE-----
-MIICcTCCAdKgAwIBAgIQL6VZUviPlH10xAlsjHqZvjAKBggqhkjOPQQDBDAXMRUw
-EwYDVQQDDAxGUkVFTkVUX0NBRkUwHhcNMjIwNDA4MDU1MjIxWhcNMzIwNDA1MDU1
-MjIxWjAXMRUwEwYDVQQDDAxGUkVFTkVUX0NBRkUwgZswEAYHKoZIzj0CAQYFK4EE
-ACMDgYYABAGsGaVIBTh1ze9nijIiCX2FdF/n3JRPx6I1YsAs6mfm5Fxgj+ARg2uY
-36CLU5lfcOQCSTBZ6bPLCOMk2MqZyx4nZgAfVP4O4EqDh31wWsu+WcBzSCUPDLJt
-WEpZZ2RFE0/nkiprp64Qim8I8Ntt94xlJhjoiRBsN4Q4UjdsPET+JavZcqOBvDCB
-uTAJBgNVHRMEAjAAMB0GA1UdDgQWBBS/sjbzw7MM+4ncySvj8PfZt+cnYTBSBgNV
-HSMESzBJgBTKvDoIpCmEFPk2ogQiI6fYdWz146EbpBkwFzEVMBMGA1UEAwwMRlJF
-RU5FVF9DQUZFghRcErIwtAVGLbGBFbxsDkiE8ubEhTATBgNVHSUEDDAKBggrBgEF
-BQcDATALBgNVHQ8EBAMCBaAwFwYDVR0RBBAwDoIMRlJFRU5FVF9DQUZFMAoGCCqG
-SM49BAMEA4GMADCBiAJCAbFSvISz84IoUdKXShC+35hJBnIMNEAW/ZbgedbHMuf4
-YVDWbIc/GdmqHkaQBEqJtw0HGEkj3CTAHqtLYPqbB6aMAkIBgvF+N4JUNAVD0HnV
-BadDhogosJZ1QAwTkNplXsBa2mf1RwxkhuT6AhdaHRs1bAuUClBT/OF7CamxB2zj
-1+qLH/I=
------END CERTIFICATE-----
-SCERT
-
- cat <<'SKEY' > /etc/openvpn/server.key
------BEGIN PRIVATE KEY-----
-MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIB48BkKOb5RGxsSO49
-Jy7znJ+qX0sqkjJbTfvs7QqEWXaB1rk20x4swxuG7zF6hhgNVuOgYu3SjPPTPLoi
-f80o7COhgYkDgYYABAGsGaVIBTh1ze9nijIiCX2FdF/n3JRPx6I1YsAs6mfm5Fxg
-j+ARg2uY36CLU5lfcOQCSTBZ6bPLCOMk2MqZyx4nZgAfVP4O4EqDh31wWsu+WcBz
-SCUPDLJtWEpZZ2RFE0/nkiprp64Qim8I8Ntt94xlJhjoiRBsN4Q4UjdsPET+JavZ
-cg==
------END PRIVATE KEY-----
-SKEY
-
-cat <<'TAK' > /etc/openvpn/ta.key
-#
-# 2048 bit OpenVPN static key
-#
------BEGIN OpenVPN Static key V1-----
-56ee4121ee1aa1b70f67b8e93f2806e5
-ee04c507e4927fd46a39444b89524d96
-083357dcf415e903a8936c3c484cf41d
-183c2df5ae7e7dca8f17925d06aaec18
-a87109c8b66ce0619066a85971a5e624
-b0bf9f45ff2a1a24ad0441ab9465154c
-8bdb1142431b35c2a21716544574e8d7
-449dc6894a1a739961e9c872af14dd39
-d8ee16e2214741abc1ddf75be501c21b
-bbfc5ea185069063de234d7ffdf94c6c
-ad9e0c497dc9a269a6596580100fa0fd
-ad990a8dec02212573a9b317567559b7
-10b20dcb4719b5fefa1e59e82b0d031d
-679cb38e15946d726577b71b39bf0646
-c03a7f04b01fe61132b078dc49b7bd79
-efa6836cec9e6acff06abf81c6035738
------END OpenVPN Static key V1-----
-TAK
-
-cat <<'clientkey' > /etc/openvpn/ckey.key
------BEGIN PRIVATE KEY-----
-MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIBS7BhlQsf9Gmk64ZK
-+V1ZQ4ZgwjYqnmIWAlUopmwy/GEc4BlSMhWFlO4IHtNu+aEdKOj9rgQHDDjapxfc
-1j53KLWhgYkDgYYABAHJBVQ7GzM/iRfUMuRsB0+QQ/y3Fb54FZc89UOyHPwlO/ri
-qw1sZ7QNu5sSq8RSgutrbwNHNj8W+PyD/7p03nUp4gDIdPOOnjjfyT/hfXdEfKFE
-mMZIABPdocJEl7zM+/LE1TO454xggWBe8uAF0oQ05d5rNKrQg9T0BvNGm1meKzNK
-Dg==
------END PRIVATE KEY-----
-clientkey
-
-cat <<'clientcert' > /etc/openvpn/ccert.crt
------BEGIN CERTIFICATE-----
-MIICXDCCAb6gAwIBAgIQEI7PQa6FqR+QLyKPQeOi4DAKBggqhkjOPQQDBDAXMRUw
-EwYDVQQDDAxGUkVFTkVUX0NBRkUwHhcNMjIwNDA4MDU1NjQ1WhcNMzIwNDA1MDU1
-NjQ1WjAcMRowGAYDVQQDDBFGUkVFTkVUX0NBRkVfVVNFUjCBmzAQBgcqhkjOPQIB
-BgUrgQQAIwOBhgAEAckFVDsbMz+JF9Qy5GwHT5BD/LcVvngVlzz1Q7Ic/CU7+uKr
-DWxntA27mxKrxFKC62tvA0c2Pxb4/IP/unTedSniAMh0846eON/JP+F9d0R8oUSY
-xkgAE92hwkSXvMz78sTVM7jnjGCBYF7y4AXShDTl3ms0qtCD1PQG80abWZ4rM0oO
-o4GjMIGgMAkGA1UdEwQCMAAwHQYDVR0OBBYEFILOwbGdg3B//iJnuDuPcQpheV2Q
-MFIGA1UdIwRLMEmAFMq8OgikKYQU+TaiBCIjp9h1bPXjoRukGTAXMRUwEwYDVQQD
-DAxGUkVFTkVUX0NBRkWCFFwSsjC0BUYtsYEVvGwOSITy5sSFMBMGA1UdJQQMMAoG
-CCsGAQUFBwMCMAsGA1UdDwQEAwIHgDAKBggqhkjOPQQDBAOBiwAwgYcCQgFSq6IU
-4hDc5QtTmmNcIIs5x93ZggeCrpwutHcTrsdRlmFG4TwAENGsUK/IpSzgJyeRiiI9
-IeVK7+EBCfchZX4wlwJBZsuBjbALcvOvbJHnHTRKfT/lieHTaGAzXF6z70YLVhga
-9g+K+u3ywDEqPwDAX5QFciFb0dwadWDdWNpHr0RrJzE=
------END CERTIFICATE-----
-clientcert
-
- if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
- sed -i 's|LimitNPROC|#LimitNPROC|g' /lib/systemd/system/openvpn*
- systemctl daemon-reload
-fi
-
-
-systemctl enable openvpn@server_tcp
-systemctl enable openvpn@server_udp
-systemctl restart openvpn@server_tcp
-systemctl restart openvpn@server_udp
-
-cat <<EOF152 > /var/www/openvpn/GStories.ovpn
-client
-dev tun
-proto tcp
-remote $(curl -s http://ipinfo.io/ip || wget -q http://ipinfo.io/ip) 110
-resolv-retry infinite
-remote-cert-tls server
-nobind
-user nobody
-group nogroup
-persist-key
-persist-tun
-auth-user-pass
-mute-replay-warnings
-auth-nocache
-auth SHA512
-cipher AES-128-CBC
-data-ciphers AES-128-CBC
-tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
-tls-client
-verb 3
-compress lz4-v2
-
-<ca>
-$(cat /etc/openvpn/ca.crt)
-</ca>
-<cert>
-$(cat /etc/openvpn/ccert.crt)
-</cert>
-<key>
-$(cat /etc/openvpn/ckey.key)
-</key>
-<tls-crypt>
-$(cat /etc/openvpn/ta.key)
-</tls-crypt>
-EOF152
-
-cat <<EOF160 > /var/www/openvpn/UDP_1194.ovpn
-client
-dev tun
-proto udp
-remote $IPADDR $OpenVPN_Port3
-resolv-retry infinite
-remote-cert-tls server
-auth-nocache
-nobind
-user nobody
-group nogroup
-persist-key
-persist-tun
-auth-user-pass
-mute-replay-warnings
-auth SHA512
-cipher AES-128-CBC
-data-ciphers AES-128-CBC
-tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
-tls-client
-verb 3
-compress lz4-v2
-<ca>
-$(cat /etc/openvpn/ca.crt)
-</ca>
-<cert>
-$(cat /etc/openvpn/ccert.crt)
-</cert>
-<key>
-$(cat /etc/openvpn/ckey.key)
-</key>
-<tls-crypt>
-$(cat /etc/openvpn/ta.key)
-</tls-crypt>
-EOF160
-
+ if [[ "$(grep -c '0.0.0.0' /etc/resolv.conf)" -ge 1 ]]; then
+ echo 'nameserver 1.1.1.1
+nameserver 1.0.0.1' > /etc/resolv.conf
+ fi
+ # fix openvpn
+ sed -i "/^push\s\"dhcp-option\sDNS.*/d" /etc/${OVPN_Name_lc}/*.conf
+ for OVPNC in "tcp" "udp"; do
+  echo -e "push \"dhcp-option DNS 1.1.1.1\"\npush \"dhcp-option DNS 1.0.0.1\"" >> "/etc/${OVPN_Name_lc}/${OVPNC}.conf"
+  systemctl restart ${OVPN_Name_lc}-server@${OVPNC}.service &>/dev/null
+ done
 }
-
 
 Install(){
  cd ~/
@@ -582,6 +310,8 @@ rm -f ~/install.log && touch ~/install.log
 netstat -tulnp | tee -a ~/install.log
 systemctl status ${SSH_Name_lc}.service | tee -a ~/install.log
 systemctl status badvpn-udpgw.service | tee -a ~/install.log
+systemctl status ${OVPN_Name_lc}-server@tcp.service | tee -a ~/install.log
+systemctl status ${OVPN_Name_lc}-server@udp.service | tee -a ~/install.log
 systemctl status ${SSL_Name_lc}.service | tee -a ~/install.log
 systemctl status ${Proxy_Name_lc}.service | tee -a ~/install.log
 systemctl status wsproxy-ssh.service | tee -a ~/install.log
@@ -592,6 +322,7 @@ systemctl status wsproxy-ovpn.service | tee -a ~/install.log
 Install
 SystemConfigs
 OpenSSH
+OpenVPN
 Stunnel
 Squid
 Wsproxy
