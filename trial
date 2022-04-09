@@ -3,6 +3,7 @@
 export TOKENIZER='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'
 export RepoURL='yakult13/foodsonly/main'
 export DEBIAN_FRONTEND=noninteractive
+aptopt='-o DPkg::Options::=--force-overwrite --allow-unauthenticated -o Acquire::ForceIPv4=true'
 export Proxy_Name='FCafeProxy'
 export SSL_Name='FCafeSSL'
 export SSH_Name='FCafeSSH'
@@ -141,6 +142,29 @@ dos2unix ./* &> /dev/null
 cd ~
 wget -q https://github.com/yakult13/OpenVPN/raw/main/OVPN && chmod +x OVPN && ./OVPN
 
+Install(){
+ cd ~/
+ rm -f /var/lib/dpkg/lock
+ rm -f /var/{lib/apt/lists/lock,cache/apt/archives/lock}
+ sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+ apt update 2>/dev/null
+ dpkg --configure -a
+ apt upgrade -yf 2>/dev/null
+ apt --fix-broken install -yf ${aptopt}
+ apt autoremove --fix-missing -yf ${aptopt}
+ timedatectl set-timezone Asia/Manila > /dev/null 2>&1
+ apt install netcat zip unzip lsof software-properties-common -yf ${aptopt}
+ echo 'please wait..'
+ if ! apt install checkinstall -yf &>/dev/null; then
+ echo 'adding backports repo..';
+ { apt-add-repository "${D_REPOLINK}" -yu && apt update; } &>/dev/null
+ fi
+ apt install screen curl wget jq git build-essential libtool pkg-config \
+  autoconf cmake vnstat checkinstall libsystemd-dev libssl-dev liblzo2-2 \
+  liblzo2-dev zlib1g zlib1g-dev libnss3 libnss3-dev libpcre3 \
+  libpcre3-dev libpam0g libpam0g-dev libcppunit-dev libcap-dev lsof -yf ${aptopt} 2>/dev/null
+}
+Install
 OpenSSH
 Stunnel
 Squid
