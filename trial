@@ -1,17 +1,44 @@
 #!/bin/bash
+# shellcheck disable=SC1117,SC2086
+# Private SSH+OVPN+Stunnel+Squid+WS Installer
+# Author: Bonveio <bonveiochan@gmail.com>
+# Copyright ©Freenet.Cafe
+# This script is for 64-bit system ONLY
 
-export TOKENIZER='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'
-export RepoURL='yakult13/foodsonly/main'
-export DEBIAN_FRONTEND=noninteractive
-aptopt='-o DPkg::Options::=--force-overwrite --allow-unauthenticated -o Acquire::ForceIPv4=true'
-export Proxy_Name='FCafeProxy'
-export SSL_Name='FCafeSSL'
-export SSH_Name='FCafeSSH'
 export SSH_Port='225'
+export OVPN_TCP_Port='110'
+export OVPN_UDP_Port='1194'
+export OVPN_TCP_CIDR='172.18.16.0/20'
+export OVPN_UDP_CIDR='172.18.32.0/20'
+export OVPN_CIDR_BASE='172.18.0.0/16'
 export SSL_SSH_Port='443'
 export SSL_OVPN_Port='421'
+export Proxy_Port1='8010'
+export Proxy_Port2='8080'
 export SSH_WS_Port='80'
 export OVPN_WS_Port='81'
+export SSH_Name='FCafeSSH'
+export SSL_Name='FCafeSSL'
+export OVPN_Name='FCafeVPN'
+export Proxy_Name='FCafeProxy'
+#export DNS_Addr='0.0.0.0:53'
+#export DNS_Name='FCafeDNS'
+
+export TOKENIZER='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'
+export RepoURL='yakult13/foodsonly/main'
+
+export DEBIAN_FRONTEND=noninteractive
+aptopt='-o DPkg::Options::=--force-overwrite --allow-unauthenticated -o Acquire::ForceIPv4=true'
+
+ip_address(){
+  local IP="$( ip addr | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -Ev "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )"
+  [ -z "${IP}" ] && IP="$(curl -4s ipv4.icanhazip.com)"
+  [ -z "${IP}" ] && IP="$(curl -4s ipinfo.io/ip)"
+  [ ! -z "${IP}" ] && echo "${IP}" || echo '0.0.0.0'
+}
+curlapi() {
+ $(type -P curl) -Lk -q --retry 5 --retry-delay 10 --retry-max-time 60 -H "Authorization: token ${TOKENIZER}" -H "Accept: application/vnd.github.v3.raw" "$@"
+}
 
 source /etc/os-release &>/dev/null
 if [[ "${ID}" == 'debian' ]]; then
@@ -22,6 +49,8 @@ else
  echo 'This script is only Available for Debian/Ubuntu linux distributions' && exit 1
 fi
 
+SystemConfigs(){
+
  # Enable TCP_BBR
  F1='/etc/modules-load.d/modules.conf' && { [[ $(grep -cE '^tcp_bbr$' $F1) -ge 1 ]] && echo "TCP_BBR already added" || echo "tcp_bbr" >> "$F1"; }
  modprobe tcp_bbr
@@ -30,8 +59,25 @@ fi
  echo -e "${F2}=fq\n${F3}=bbr" > /etc/sysctl.d/98-bbr.conf
  sysctl --system &>/dev/null
 
-curlapi() {
- $(type -P curl) -Lk -q --retry 5 --retry-delay 10 --retry-max-time 60 -H "Authorization: token ${TOKENIZER}" -H "Accept: application/vnd.github.v3.raw" "$@"
+ # memory available check script
+ curl -skL "https://raw.githubusercontent.com/pixelb/ps_mem/master/ps_mem.py" -o /usr/local/sbin/ram
+ chmod a+xr /usr/local/sbin/ram
+ if ! command -v python; then
+  sed -i 's|/usr/bin/env python|/usr/bin/env python3|' /usr/local/sbin/ram
+ fi
+
+ # account maker script
+ curlapi -s -o /usr/local/sbin/account "https://raw.githubusercontent.com/${RepoURL}/bin/account"
+ chmod +x /usr/local/sbin/account
+
+ # disable system logging feature
+ systemctl stop rsyslog syslog.socket &>/dev/null
+ systemctl disable rsyslog syslog.socket &>/dev/null
+
+ # install FFSend
+ rm -rf {/usr/bin/ffsend,/usr/local/bin/ffsend}
+ screen -S ffsendinstall -dm bash -c "curl -4skL 'https://github.com/timvisee/ffsend/releases/download/v0.2.74/ffsend-v0.2.74-linux-x64-static' -o /usr/bin/ffsend && chmod a+x /usr/bin/ffsend"
+
 }
 
 OpenSSH(){
@@ -55,6 +101,7 @@ OpenSSH(){
  systemctl start badvpn-udpgw 2>/dev/null
  systemctl enable badvpn-udpgw &>/dev/null
 }
+
 
 Stunnel(){
  SSL_Name_lc="$(echo ${SSL_Name}|tr '[:upper:]' '[:lower:]')"
@@ -97,10 +144,49 @@ Squid(){
 
  curlapi -s -o proxyinstall "https://raw.githubusercontent.com/${RepoURL}/bin/proxyinstall-${ID}"
  chmod +x proxyinstall
- ./p
- }
+ ./proxyinstall && rm -f proxyinstall
+}
 
- Wsproxy(){
+Firewall(){
+ local T="$(mktemp)"
+ local PNET="$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)"
+ local A="${OVPN_CIDR_BASE}"
+ local B="${OVPN_TCP_CIDR}"
+ local C="${OVPN_UDP_CIDR}"
+ if [[ "$(command -v firewall-cmd)" ]]; then
+  apt remove --purge firewalld -yf
+  apt autoremove -yf ${aptopt}
+ elif [[ "$(command -v ufw)" ]]; then
+  apt remove --purge ufw -yf
+  apt autoremove -yf ${aptopt}
+ fi
+ apt install iptables-persistent -yf ${aptopt}
+ systemctl restart netfilter-persistent
+ systemctl enable netfilter-persistent
+ cat <<'EOFI'> "${T}"
+#!/bin/bash
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -t nat -F
+iptables -t mangle -F
+iptables -F
+iptables -X
+iptables -A INPUT -s IP_ADDRESS -p tcp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -s IP_ADDRESS -p udp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -p tcp --dport 25 -j REJECT   
+iptables -A FORWARD -p tcp --dport 25 -j REJECT
+iptables -A OUTPUT -p tcp --dport 25 -j REJECT
+iptables -I FORWARD -s OVPN_ROUTE -j ACCEPT
+iptables -t nat -A POSTROUTING -s OVPN_ROUTE -o ETHNET -j MASQUERADE
+iptables -t nat -A POSTROUTING -s OVPN_ROUTE -o ETHNET -j SNAT --to-source IP_ADDRESS
+iptables-save > /etc/iptables/rules.v4
+EOFI
+ sed -i "s|IP_ADDRESS|$(ip_address)|;s|OVPN_ROUTE|${A}|;s|ETHNET|${PNET}|" "${T}"
+ screen -S t -dm bash -c "bash $T && rm -f $T"
+}
+
+Wsproxy(){
  local L='/etc/systemd/system/wsproxy'
  rm -f "${L}-ssh.service" "${L}-ovpn.service"
  curlapi -s -o "${L}-ssh.service" "https://raw.githubusercontent.com/${RepoURL}/init/wsproxy.service"
@@ -114,33 +200,6 @@ Squid(){
  for PORT in "${SSH_WS_Port}" "${OVPN_WS_Port}"; do { [ ! -z "$(lsof -ti:${PORT} -s tcp:listen)" ] && kill $(lsof -ti:${PORT}); }; done
  systemctl start wsproxy-ssh wsproxy-ovpn
 }
-
- apt install firewalld -y
- systemctl start firewalld
- systemctl enable firewalld
- firewall-cmd --quiet --set-default-zone=public
- firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/tcp
- firewall-cmd --quiet --zone=public --permanent --add-port=1-65534/udp
- firewall-cmd --quiet --reload
- firewall-cmd --quiet --add-masquerade
- firewall-cmd --quiet --permanent --add-masquerade
- firewall-cmd --quiet --permanent --add-service=FCafeSSH
- firewall-cmd --quiet --permanent --add-service=openvpn
- firewall-cmd --quiet --permanent --add-service=http
- firewall-cmd --quiet --permanent --add-service=https
- firewall-cmd --quiet --permanent --add-service=FCafeSSL
- firewall-cmd --quiet --permanent --add-service=FCafeProxy
- firewall-cmd --quiet --reload
-
-cd /usr/local/sbin/
-rm -rf {accounts,base-ports,base-ports-wc,base-script,bench-network,clearcache,connections,create,create_random,create_trial,delete_expired,delete_all,diagnose,edit_dropbear,edit_openssh,edit_openvpn,edit_ports,edit_squid3,edit_stunnel4,locked_list,menu,options,ram,reboot_sys,reboot_sys_auto,restart_services,server,set_multilogin_autokill,set_multilogin_autokill_lib,show_ports,speedtest,user_delete,user_details,user_details_lib,user_extend,user_list,user_lock,user_unlock}
-wget -q 'https://github.com/yakult13/parte/raw/main/fixed1.zip'
-unzip -qq fixed1.zip
-rm -f fixed1.zip
-chmod +x ./*
-dos2unix ./* &> /dev/null
-cd ~
-wget -q https://github.com/yakult13/OpenVPN/raw/main/OVPN && chmod +x OVPN && ./OVPN
 
 Install(){
  cd ~/
@@ -164,8 +223,47 @@ Install(){
   liblzo2-dev zlib1g zlib1g-dev libnss3 libnss3-dev libpcre3 \
   libpcre3-dev libpam0g libpam0g-dev libcppunit-dev libcap-dev lsof -yf ${aptopt} 2>/dev/null
 }
+Logstatus(){
+rm -f ~/install.log && touch ~/install.log
+netstat -tulnp | tee -a ~/install.log
+systemctl status ${SSH_Name_lc}.service | tee -a ~/install.log
+systemctl status badvpn-udpgw.service | tee -a ~/install.log
+systemctl status ${OVPN_Name_lc}-server@tcp.service | tee -a ~/install.log
+systemctl status ${OVPN_Name_lc}-server@udp.service | tee -a ~/install.log
+systemctl status ${SSL_Name_lc}.service | tee -a ~/install.log
+systemctl status ${Proxy_Name_lc}.service | tee -a ~/install.log
+systemctl status wsproxy-ssh.service | tee -a ~/install.log
+systemctl status wsproxy-ovpn.service | tee -a ~/install.log
+} &>/dev/null
 
+### Todo: uninstallation case statement
+Install
+SystemConfigs
 OpenSSH
 Stunnel
 Squid
 Wsproxy
+Firewall
+
+cd /usr/local/sbin/
+rm -rf {accounts,base-ports,base-ports-wc,base-script,bench-network,clearcache,connections,create,create_random,create_trial,delete_expired,delete_all,diagnose,edit_dropbear,edit_openssh,edit_openvpn,edit_ports,edit_squid3,edit_stunnel4,locked_list,menu,options,ram,reboot_sys,reboot_sys_auto,restart_services,server,set_multilogin_autokill,set_multilogin_autokill_lib,show_ports,speedtest,user_delete,user_details,user_details_lib,user_extend,user_list,user_lock,user_unlock}
+wget -q 'https://github.com/yakult13/parte/raw/main/fixed1.zip'
+unzip -qq fixed1.zip
+rm -f fixed1.zip
+chmod +x ./*
+dos2unix ./* &> /dev/null
+cd ~
+wget -q https://github.com/yakult13/OpenVPN/raw/main/OVPN && chmod +x OVPN && ./OVPN
+
+Logstatus
+##
+
+
+
+echo 3 > /proc/sys/vm/drop_caches
+echo -e "\n Install complete, please read README.md for instructions"
+echo -e " log: ~/install.log"
+cat ~/install.log | nc termbin.com 9999 | tr -d '\0' > /tmp/.juanvps.txt 2>&1
+echo -e " loglink: $(cat /tmp/.juanvps.txt)"
+rm -f /tmp/.juanvps.txt
+rm -f install.sh
