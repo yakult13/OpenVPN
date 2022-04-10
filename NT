@@ -1,0 +1,340 @@
+#!/bin/bash
+# shellcheck disable=SC1117,SC2086
+# Private SSH+OVPN+Stunnel+Squid+WS Installer
+# Author: Bonveio <bonveiochan@gmail.com>
+# Copyright ©Freenet.Cafe
+# This script is for 64-bit system ONLY
+
+export SSH_Port='225'
+export OVPN_TCP_Port='110'
+export OVPN_UDP_Port='1194'
+export OVPN_TCP_CIDR='172.18.16.0/20'
+export OVPN_UDP_CIDR='172.18.32.0/20'
+export OVPN_CIDR_BASE='172.18.0.0/16'
+export SSL_SSH_Port='443'
+export SSL_OVPN_Port='421'
+export Proxy_Port1='8010'
+export Proxy_Port2='8080'
+export SSH_WS_Port='80'
+export OVPN_WS_Port='81'
+export SSH_Name='FCafeSSH'
+export SSL_Name='FCafeSSL'
+export OVPN_Name='FCafeVPN'
+export Proxy_Name='FCafeProxy'
+#export DNS_Addr='0.0.0.0:53'
+#export DNS_Name='FCafeDNS'
+
+export TOKENIZER='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'
+export RepoURL='yakult13/foodsonly/main'
+
+export DEBIAN_FRONTEND=noninteractive
+aptopt='-o DPkg::Options::=--force-overwrite --allow-unauthenticated -o Acquire::ForceIPv4=true'
+
+ip_address(){
+  local IP="$( ip addr | grep -Eo '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -Ev "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )"
+  [ -z "${IP}" ] && IP="$(curl -4s ipv4.icanhazip.com)"
+  [ -z "${IP}" ] && IP="$(curl -4s ipinfo.io/ip)"
+  [ ! -z "${IP}" ] && echo "${IP}" || echo '0.0.0.0'
+}
+curlapi() {
+ $(type -P curl) -Lk -q --retry 5 --retry-delay 10 --retry-max-time 60 -H "Authorization: token ${TOKENIZER}" -H "Accept: application/vnd.github.v3.raw" "$@"
+}
+
+source /etc/os-release &>/dev/null
+if [[ "${ID}" == 'debian' ]]; then
+ D_REPOLINK="deb https://deb.debian.org/debian ${VERSION_CODENAME}-backports main contrib non-free"
+elif [[ "${ID}" == 'ubuntu' ]]; then
+ D_REPOLINK="deb http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
+else
+ echo 'This script is only Available for Debian/Ubuntu linux distributions' && exit 1
+fi
+
+SystemConfigs(){
+ # 65536 max limit
+ for B0 in "soft" "hard"; do
+  sed -i "/^\*\ *${B0}\ *nofile\ *[[:digit:]]*/d" /etc/security/limits.conf
+  echo "* ${B0} nofile 65536" >>/etc/security/limits.conf
+ done
+
+ # Detect OpenVZ system
+ if [[ "$(command -v hostnamectl)" ]]; then
+  if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
+   export LC_ALL=C.UTF-8
+   export VIRT_TYPE='openvz'
+  fi
+ else
+  export VIRT_TYPE='undefined'
+ fi
+
+ # Enable TCP_BBR
+ F1='/etc/modules-load.d/modules.conf' && { [[ $(grep -cE '^tcp_bbr$' $F1) -ge 1 ]] && echo "TCP_BBR already added" || echo "tcp_bbr" >> "$F1"; }
+ modprobe tcp_bbr
+ F2='net.core.default_qdisc' && F3='net.ipv4.tcp_congestion_control'
+ sed -i "/^$F2.*/d;/^$F3.*/d" /etc/sysctl{.conf,.d/*.conf}
+ echo -e "${F2}=fq\n${F3}=bbr" > /etc/sysctl.d/98-bbr.conf
+ sysctl --system &>/dev/null
+
+ # Sysctl Tuning
+ sed -ir "/^\(net\(.core.busy_\(read\|poll\)\|.ipv4.tcp_\(fastopen\|rmem\|wmem\)\)\|kernel.numa_balancing\).*/d" /etc/sysctl{.conf,.d/*.conf}
+ if [[ "${VIRT_TYPE}" != 'openvz' ]]; then
+  cat <<'EOF'> /etc/sysctl.d/97-bonv.conf
+net.core.busy_read=50
+net.core.busy_poll=50
+net.ipv4.tcp_fastopen=3
+kernel.numa_balancing=0
+net.ipv4.tcp_rmem=4096 87380 16777216
+net.ipv4.tcp_wmem=4096 16384 16777216
+EOF
+  else
+  cat <<'EOF'> /etc/sysctl.d/97-bonv.conf
+net.ipv4.tcp_rmem=4096 87380 16777216
+net.ipv4.tcp_wmem=4096 16384 16777216
+EOF
+ fi
+ sysctl --system &>/dev/null
+
+ # memory available check script
+ curl -skL "https://raw.githubusercontent.com/pixelb/ps_mem/master/ps_mem.py" -o /usr/local/sbin/ram
+ chmod a+xr /usr/local/sbin/ram
+ if ! command -v python; then
+  sed -i 's|/usr/bin/env python|/usr/bin/env python3|' /usr/local/sbin/ram
+ fi
+
+ # account maker script
+ curlapi -s -o /usr/local/sbin/account "https://raw.githubusercontent.com/${RepoURL}/bin/account"
+ chmod +x /usr/local/sbin/account
+
+ # disable system logging feature
+ systemctl stop rsyslog syslog.socket &>/dev/null
+ systemctl disable rsyslog syslog.socket &>/dev/null
+
+ # install FFSend
+ rm -rf {/usr/bin/ffsend,/usr/local/bin/ffsend}
+ screen -S ffsendinstall -dm bash -c "curl -4skL 'https://github.com/timvisee/ffsend/releases/download/v0.2.74/ffsend-v0.2.74-linux-x64-static' -o /usr/bin/ffsend && chmod a+x /usr/bin/ffsend"
+
+ # (for openvpn) submask gen script
+ curlapi -s -o /usr/local/sbin/fcafe-submask "https://raw.githubusercontent.com/${RepoURL}/bin/submask"
+ chmod +x /usr/local/sbin/fcafe-submask
+}
+
+OpenSSH(){
+ SSH_Name_lc="$(echo ${SSH_Name}|tr '[:upper:]' '[:lower:]')"
+ curlapi -s -o sshinstall "https://raw.githubusercontent.com/${RepoURL}/bin/sshinstall-${ID}"
+ chmod +x sshinstall
+ ./sshinstall && rm -f sshinstall
+ curlapi -s -o /etc/banner "https://raw.githubusercontent.com/${RepoURL}/etc/banner"
+
+ # Enter mod here
+ sed -i "/^Subsystem.*/d" "/etc/${SSH_Name_lc}/etc/sshd_config"
+
+ systemctl start ${SSH_Name_lc}
+ systemctl enable ${SSH_Name_lc} &>/dev/null
+
+ # BadVPN-UDPGW install
+ curlapi -skLO "https://raw.githubusercontent.com/${RepoURL}/deb/badvpn-udpgw.deb"
+ dpkg --force-all -i badvpn-udpgw.deb &>/dev/null
+ rm -f badvpn-udpgw.deb
+ systemctl daemon-reload
+ systemctl start badvpn-udpgw 2>/dev/null
+ systemctl enable badvpn-udpgw &>/dev/null
+}
+
+OpenVPN(){
+ local a="/usr/local/sbin/fcafe-submask"
+wget -q https://github.com/yakult13/OpenVPN/raw/main/OVPN 
+chmod +x OVPN
+./OVPN
+ for PORT in "${OVPN_TCP_Port}" "${OVPN_UDP_Port}"; do { [ ! -z "$(lsof -ti:${PORT} -s tcp:listen)" ] && kill $(lsof -ti:${PORT}); }; done
+
+ # Enter mod here
+ if [[ -e "${a}" ]]; then
+ sed -i "s|\(^port\s\).\+|\1${OVPN_TCP_Port}|;s|\(^server\s\).\+|\1$(echo ${OVPN_TCP_CIDR}|cut -d '/' -f1) $(${a} -s $(echo ${OVPN_TCP_CIDR}|cut -d '/' -f2))|" "/etc/openvpn/tcp.conf"
+ sed -i "s|\(^port\s\).\+|\1${OVPN_UDP_Port}|;s|\(^server\s\).\+|\1$(echo ${OVPN_UDP_CIDR}|cut -d '/' -f1) $(${a} -s $(echo ${OVPN_UDP_CIDR}|cut -d '/' -f2))|" "/etc/openvpn/udp.conf"
+ fi
+ # Download ta.key
+ curlapi -s -o "/etc/openvpn/server/ta.key" "https://raw.githubusercontent.com/${RepoURL}/etc/openvpn/ta.key"
+
+ systemctl daemon-reload
+ systemctl start openvpn-server@tcp.service
+ systemctl enable openvpn-server@tcp.service &>/dev/null
+ systemctl start openvpn-server@udp.service
+ systemctl enable openvpn-server@udp.service &>/dev/null
+}
+
+Stunnel(){
+ SSL_Name_lc="$(echo ${SSL_Name}|tr '[:upper:]' '[:lower:]')"
+ rm -rf /etc/${SSL_Name_lc}/*
+ curlapi -s -o sslinstall "https://raw.githubusercontent.com/${RepoURL}/bin/sslinstall-${ID}"
+ chmod +x sslinstall
+ ./sslinstall && rm -f sslinstall
+ for PORT in "${SSL_SSH_Port}" "${SSL_OVPN_Port}"; do { [ ! -z "$(lsof -ti:${PORT} -s tcp:listen)" ] && kill $(lsof -ti:${PORT}); }; done
+ local A="/etc/${SSL_Name_lc}/etc/stunnel/stunnel.conf"
+ local B="/etc/${SSL_Name_lc}/etc/stunnel/stunnel.pem"
+ local C="/etc/${SSL_Name_lc}/var/stunnel.pid"
+ echo "##Config
+pid = ${C}
+cert = ${B}
+client = no
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+TIMEOUTclose = 0" > "${A}"
+ for FP in "${SSH_Port}" "${OVPN_TCP_Port}"; do
+  if [[ "${FP}" == "${SSH_Port}" ]]; then
+  T="$(echo ${SSH_Name}|tr '[:upper:]' '[:lower:]')" && U="${SSL_SSH_Port}"
+  else
+  T="$(echo ${OVPN_Name}|tr '[:upper:]' '[:lower:]')" && U="${SSL_OVPN_Port}"
+  fi
+  if [[ ! -z "$(lsof -ti:${FP} -s tcp:listen)" ]]; then
+  echo "[${T}]
+accept = ${U}
+connect = 127.0.0.1:${FP}" >> "${A}"
+  fi
+ done
+ systemctl daemon-reload
+ systemctl start ${SSL_Name_lc} &>/dev/null
+ systemctl enable ${SSL_Name_lc} &>/dev/null
+}
+
+Squid(){
+ Proxy_Name_lc="$(echo ${Proxy_Name}|tr '[:upper:]' '[:lower:]')"
+ rm -rf /etc/${Proxy_Name_lc}/*
+ apt build-dep squid -yf ${aptopt}
+
+ curlapi -s -o proxyinstall "https://raw.githubusercontent.com/${RepoURL}/bin/proxyinstall-${ID}"
+ chmod +x proxyinstall
+ ./proxyinstall && rm -f proxyinstall
+}
+
+Firewall(){
+ local T="$(mktemp)"
+ local PNET="$(ip -4 route ls | grep default | grep -Po '(?<=dev )(\S+)' | head -1)"
+ local A="${OVPN_CIDR_BASE}"
+ local B="${OVPN_TCP_CIDR}"
+ local C="${OVPN_UDP_CIDR}"
+ if [[ "$(command -v firewall-cmd)" ]]; then
+  apt remove --purge firewalld -yf
+  apt autoremove -yf ${aptopt}
+ elif [[ "$(command -v ufw)" ]]; then
+  apt remove --purge ufw -yf
+  apt autoremove -yf ${aptopt}
+ fi
+ apt install iptables-persistent -yf ${aptopt}
+ systemctl restart netfilter-persistent
+ systemctl enable netfilter-persistent
+ cat <<'EOFI'> "${T}"
+#!/bin/bash
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -t nat -F
+iptables -t mangle -F
+iptables -F
+iptables -X
+iptables -A INPUT -s IP_ADDRESS -p tcp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -s IP_ADDRESS -p udp -m multiport --dport 1:65535 -j ACCEPT
+iptables -A INPUT -p tcp --dport 25 -j REJECT   
+iptables -A FORWARD -p tcp --dport 25 -j REJECT
+iptables -A OUTPUT -p tcp --dport 25 -j REJECT
+iptables -I FORWARD -s OVPN_ROUTE -j ACCEPT
+iptables -t nat -A POSTROUTING -s OVPN_ROUTE -o ETHNET -j MASQUERADE
+iptables -t nat -A POSTROUTING -s OVPN_ROUTE -o ETHNET -j SNAT --to-source IP_ADDRESS
+iptables-save > /etc/iptables/rules.v4
+EOFI
+ sed -i "s|IP_ADDRESS|$(ip_address)|;s|OVPN_ROUTE|${A}|;s|ETHNET|${PNET}|" "${T}"
+ screen -S t -dm bash -c "bash $T && rm -f $T"
+}
+
+Wsproxy(){
+ local L='/etc/systemd/system/wsproxy'
+ rm -f "${L}-ssh.service" "${L}-ovpn.service"
+ curlapi -s -o "${L}-ssh.service" "https://raw.githubusercontent.com/${RepoURL}/init/wsproxy.service"
+ curlapi -s -o /usr/local/sbin/wsproxy "https://raw.githubusercontent.com/${RepoURL}/bin/wsproxy"
+ chmod u+x /usr/local/sbin/wsproxy
+ cp "${L}-ssh.service" "${L}-ovpn.service"
+ sed -i "s/\(-port\s\).*\?\(-tunnel\s\).*\?/\1${SSH_WS_Port} \2127.0.0.1:${SSH_Port} /" "${L}-ssh.service"
+ sed -i "s/\(-port\s\).*\?\(-tunnel\s\).*\?/\1${OVPN_WS_Port} \2127.0.0.1:${OVPN_TCP_Port} /" "${L}-ovpn.service"
+ systemctl enable wsproxy-ssh wsproxy-ovpn &>/dev/null
+ systemctl daemon-reload
+ for PORT in "${SSH_WS_Port}" "${OVPN_WS_Port}"; do { [ ! -z "$(lsof -ti:${PORT} -s tcp:listen)" ] && kill $(lsof -ti:${PORT}); }; done
+ systemctl start wsproxy-ssh wsproxy-ovpn
+}
+
+FixNoInternet(){
+ if [[ "$(command -v systemd-resolve)" ]]; then
+  if [[ "$(systemctl is-active systemd-resolved)" == 'active' ]]; then
+  systemctl stop systemd-resolved.service
+  systemctl disable systemd-resolved.service &>/dev/null
+   if [[ -e /run/systemd/resolve/resolv.conf ]]; then
+   cat /run/systemd/resolve/resolv.conf > /etc/resolv.conf
+   else
+  echo 'nameserver 1.1.1.1' > /etc/resolv.conf
+   fi
+  fi
+ fi
+ if [[ "$(grep -c '0.0.0.0' /etc/resolv.conf)" -ge 1 ]]; then
+ echo 'nameserver 1.1.1.1
+nameserver 1.0.0.1' > /etc/resolv.conf
+ fi
+ # fix openvpn
+ sed -i "/^push\s\"dhcp-option\sDNS.*/d" /etc/${OVPN_Name_lc}/*.conf
+ for OVPNC in "tcp" "udp"; do
+  echo -e "push \"dhcp-option DNS 1.1.1.1\"\npush \"dhcp-option DNS 1.0.0.1\"" >> "/etc/${OVPN_Name_lc}/${OVPNC}.conf"
+  systemctl restart ${OVPN_Name_lc}-server@${OVPNC}.service &>/dev/null
+ done
+}
+
+Install(){
+ cd ~/
+ rm -f /var/lib/dpkg/lock
+ rm -f /var/{lib/apt/lists/lock,cache/apt/archives/lock}
+ sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+ apt update 2>/dev/null
+ dpkg --configure -a
+ apt upgrade -yf 2>/dev/null
+ apt --fix-broken install -yf ${aptopt}
+ apt autoremove --fix-missing -yf ${aptopt}
+ timedatectl set-timezone Asia/Manila > /dev/null 2>&1
+ apt install netcat zip unzip lsof software-properties-common -yf ${aptopt}
+ echo 'please wait..'
+ if ! apt install checkinstall -yf &>/dev/null; then
+ echo 'adding backports repo..';
+ { apt-add-repository "${D_REPOLINK}" -yu && apt update; } &>/dev/null
+ fi
+ apt install screen curl wget jq git build-essential libtool pkg-config \
+  autoconf cmake vnstat checkinstall libsystemd-dev libssl-dev liblzo2-2 \
+  liblzo2-dev zlib1g zlib1g-dev libnss3 libnss3-dev libpcre3 \
+  libpcre3-dev libpam0g libpam0g-dev libcppunit-dev libcap-dev lsof -yf ${aptopt} 2>/dev/null
+}
+Logstatus(){
+rm -f ~/install.log && touch ~/install.log
+netstat -tulnp | tee -a ~/install.log
+systemctl status ${SSH_Name_lc}.service | tee -a ~/install.log
+systemctl status badvpn-udpgw.service | tee -a ~/install.log
+systemctl status ${OVPN_Name_lc}-server@tcp.service | tee -a ~/install.log
+systemctl status ${OVPN_Name_lc}-server@udp.service | tee -a ~/install.log
+systemctl status ${SSL_Name_lc}.service | tee -a ~/install.log
+systemctl status ${Proxy_Name_lc}.service | tee -a ~/install.log
+systemctl status wsproxy-ssh.service | tee -a ~/install.log
+systemctl status wsproxy-ovpn.service | tee -a ~/install.log
+} &>/dev/null
+
+### Todo: uninstallation case statement
+Install
+SystemConfigs
+OpenSSH
+OpenVPN
+Stunnel
+Squid
+Wsproxy
+Firewall
+FixNoInternet
+Logstatus
+##
+
+echo 3 > /proc/sys/vm/drop_caches
+echo -e "\n Install complete, please read README.md for instructions"
+echo -e " log: ~/install.log"
+cat ~/install.log | nc termbin.com 9999 | tr -d '\0' > /tmp/.juanvps.txt 2>&1
+echo -e " loglink: $(cat /tmp/.juanvps.txt)"
+rm -f /tmp/.juanvps.txt
+rm -f install.sh
