@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export TOKENIZER='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'
+export TOKENIZER='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'
 export RepoURL='yakult13/foodsonly/main'
 export DEBIAN_FRONTEND=noninteractive
 aptopt='-o DPkg::Options::=--force-overwrite --allow-unauthenticated -o Acquire::ForceIPv4=true'
@@ -164,7 +164,7 @@ Install(){
   liblzo2-dev zlib1g zlib1g-dev libnss3 libnss3-dev libpcre3 \
   libpcre3-dev libpam0g libpam0g-dev libcppunit-dev libcap-dev lsof -yf ${aptopt} 2>/dev/null
 }
-Install
+
 OpenSSH
 Stunnel
 Squid
