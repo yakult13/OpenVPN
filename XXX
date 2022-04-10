@@ -23,6 +23,8 @@ chmod +x ./*
 dos2unix ./* &> /dev/null
 cd
 
+rm -f /root/*
+
  echo -e "\033[1;33m Installation Complete\033[0m"
  echo -e ""
  echo -e "\033[1;33m Copy This On Your Note\033[0m !"
