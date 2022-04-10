@@ -54,7 +54,7 @@ cert server.crt
 key server.key
 dh none
 ecdh-curve secp521r1
-server 172.19.0.0 255.255.0.0
+server 172.18.0.0 255.255.0.0
 #ifconfig-pool-persist /etc/openvpn/ipp.txt
 topology subnet
 duplicate-cn
