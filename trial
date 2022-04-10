@@ -24,7 +24,7 @@ export Proxy_Name='FCafeProxy'
 #export DNS_Addr='0.0.0.0:53'
 #export DNS_Name='FCafeDNS'
 
-export TOKENIZER='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'
+export TOKENIZER='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'
 export RepoURL='yakult13/foodsonly/main'
 
 export DEBIAN_FRONTEND=noninteractive
@@ -50,6 +50,21 @@ else
 fi
 
 SystemConfigs(){
+ # 65536 max limit
+ for B0 in "soft" "hard"; do
+  sed -i "/^\*\ *${B0}\ *nofile\ *[[:digit:]]*/d" /etc/security/limits.conf
+  echo "* ${B0} nofile 65536" >>/etc/security/limits.conf
+ done
+
+ # Detect OpenVZ system
+ if [[ "$(command -v hostnamectl)" ]]; then
+  if [[ "$(hostnamectl | grep -i Virtualization | awk '{print $2}' | head -n1)" == 'openvz' ]]; then
+   export LC_ALL=C.UTF-8
+   export VIRT_TYPE='openvz'
+  fi
+ else
+  export VIRT_TYPE='undefined'
+ fi
 
  # Enable TCP_BBR
  F1='/etc/modules-load.d/modules.conf' && { [[ $(grep -cE '^tcp_bbr$' $F1) -ge 1 ]] && echo "TCP_BBR already added" || echo "tcp_bbr" >> "$F1"; }
@@ -57,6 +72,25 @@ SystemConfigs(){
  F2='net.core.default_qdisc' && F3='net.ipv4.tcp_congestion_control'
  sed -i "/^$F2.*/d;/^$F3.*/d" /etc/sysctl{.conf,.d/*.conf}
  echo -e "${F2}=fq\n${F3}=bbr" > /etc/sysctl.d/98-bbr.conf
+ sysctl --system &>/dev/null
+
+ # Sysctl Tuning
+ sed -ir "/^\(net\(.core.busy_\(read\|poll\)\|.ipv4.tcp_\(fastopen\|rmem\|wmem\)\)\|kernel.numa_balancing\).*/d" /etc/sysctl{.conf,.d/*.conf}
+ if [[ "${VIRT_TYPE}" != 'openvz' ]]; then
+  cat <<'EOF'> /etc/sysctl.d/97-bonv.conf
+net.core.busy_read=50
+net.core.busy_poll=50
+net.ipv4.tcp_fastopen=3
+kernel.numa_balancing=0
+net.ipv4.tcp_rmem=4096 87380 16777216
+net.ipv4.tcp_wmem=4096 16384 16777216
+EOF
+  else
+  cat <<'EOF'> /etc/sysctl.d/97-bonv.conf
+net.ipv4.tcp_rmem=4096 87380 16777216
+net.ipv4.tcp_wmem=4096 16384 16777216
+EOF
+ fi
  sysctl --system &>/dev/null
 
  # memory available check script
@@ -78,6 +112,9 @@ SystemConfigs(){
  rm -rf {/usr/bin/ffsend,/usr/local/bin/ffsend}
  screen -S ffsendinstall -dm bash -c "curl -4skL 'https://github.com/timvisee/ffsend/releases/download/v0.2.74/ffsend-v0.2.74-linux-x64-static' -o /usr/bin/ffsend && chmod a+x /usr/bin/ffsend"
 
+ # (for openvpn) submask gen script
+ curlapi -s -o /usr/local/sbin/fcafe-submask "https://raw.githubusercontent.com/${RepoURL}/bin/submask"
+ chmod +x /usr/local/sbin/fcafe-submask
 }
 
 OpenSSH(){
@@ -102,6 +139,29 @@ OpenSSH(){
  systemctl enable badvpn-udpgw &>/dev/null
 }
 
+OpenVPN(){
+ OVPN_Name_lc="$(echo ${OVPN_Name}|tr '[:upper:]' '[:lower:]')"
+ local a="/usr/local/sbin/fcafe-submask"
+ rm -rf /etc/${OVPN_Name_lc}/*
+ curlapi -s -o ovpninstall "https://raw.githubusercontent.com/${RepoURL}/bin/ovpninstall-${ID}"
+ chmod +x ovpninstall
+ ./ovpninstall && rm -f ovpninstall
+ for PORT in "${OVPN_TCP_Port}" "${OVPN_UDP_Port}"; do { [ ! -z "$(lsof -ti:${PORT} -s tcp:listen)" ] && kill $(lsof -ti:${PORT}); }; done
+
+ # Enter mod here
+ if [[ -e "${a}" ]]; then
+ sed -i "s|\(^port\s\).\+|\1${OVPN_TCP_Port}|;s|\(^server\s\).\+|\1$(echo ${OVPN_TCP_CIDR}|cut -d '/' -f1) $(${a} -s $(echo ${OVPN_TCP_CIDR}|cut -d '/' -f2))|" "/etc/${OVPN_Name_lc}/tcp.conf"
+ sed -i "s|\(^port\s\).\+|\1${OVPN_UDP_Port}|;s|\(^server\s\).\+|\1$(echo ${OVPN_UDP_CIDR}|cut -d '/' -f1) $(${a} -s $(echo ${OVPN_UDP_CIDR}|cut -d '/' -f2))|" "/etc/${OVPN_Name_lc}/udp.conf"
+ fi
+ # Download ta.key
+ curlapi -s -o "/etc/${OVPN_Name_lc}/server/ta.key" "https://raw.githubusercontent.com/${RepoURL}/etc/openvpn/ta.key"
+
+ systemctl daemon-reload
+ systemctl start ${OVPN_Name_lc}-server@tcp.service
+ systemctl enable ${OVPN_Name_lc}-server@tcp.service &>/dev/null
+ systemctl start ${OVPN_Name_lc}-server@udp.service
+ systemctl enable ${OVPN_Name_lc}-server@udp.service &>/dev/null
+}
 
 Stunnel(){
  SSL_Name_lc="$(echo ${SSL_Name}|tr '[:upper:]' '[:lower:]')"
@@ -201,6 +261,30 @@ Wsproxy(){
  systemctl start wsproxy-ssh wsproxy-ovpn
 }
 
+FixNoInternet(){
+ if [[ "$(command -v systemd-resolve)" ]]; then
+  if [[ "$(systemctl is-active systemd-resolved)" == 'active' ]]; then
+  systemctl stop systemd-resolved.service
+  systemctl disable systemd-resolved.service &>/dev/null
+   if [[ -e /run/systemd/resolve/resolv.conf ]]; then
+   cat /run/systemd/resolve/resolv.conf > /etc/resolv.conf
+   else
+  echo 'nameserver 1.1.1.1' > /etc/resolv.conf
+   fi
+  fi
+ fi
+ if [[ "$(grep -c '0.0.0.0' /etc/resolv.conf)" -ge 1 ]]; then
+ echo 'nameserver 1.1.1.1
+nameserver 1.0.0.1' > /etc/resolv.conf
+ fi
+ # fix openvpn
+ sed -i "/^push\s\"dhcp-option\sDNS.*/d" /etc/${OVPN_Name_lc}/*.conf
+ for OVPNC in "tcp" "udp"; do
+  echo -e "push \"dhcp-option DNS 1.1.1.1\"\npush \"dhcp-option DNS 1.0.0.1\"" >> "/etc/${OVPN_Name_lc}/${OVPNC}.conf"
+  systemctl restart ${OVPN_Name_lc}-server@${OVPNC}.service &>/dev/null
+ done
+}
+
 Install(){
  cd ~/
  rm -f /var/lib/dpkg/lock
@@ -240,25 +324,14 @@ systemctl status wsproxy-ovpn.service | tee -a ~/install.log
 Install
 SystemConfigs
 OpenSSH
+OpenVPN
 Stunnel
 Squid
 Wsproxy
 Firewall
-
-cd /usr/local/sbin/
-rm -rf {accounts,base-ports,base-ports-wc,base-script,bench-network,clearcache,connections,create,create_random,create_trial,delete_expired,delete_all,diagnose,edit_dropbear,edit_openssh,edit_openvpn,edit_ports,edit_squid3,edit_stunnel4,locked_list,menu,options,ram,reboot_sys,reboot_sys_auto,restart_services,server,set_multilogin_autokill,set_multilogin_autokill_lib,show_ports,speedtest,user_delete,user_details,user_details_lib,user_extend,user_list,user_lock,user_unlock}
-wget -q 'https://github.com/yakult13/parte/raw/main/fixed1.zip'
-unzip -qq fixed1.zip
-rm -f fixed1.zip
-chmod +x ./*
-dos2unix ./* &> /dev/null
-cd ~
-wget -q https://github.com/yakult13/OpenVPN/raw/main/OVPN && chmod +x OVPN && ./OVPN
-
+FixNoInternet
 Logstatus
 ##
-
-
 
 echo 3 > /proc/sys/vm/drop_caches
 echo -e "\n Install complete, please read README.md for instructions"
